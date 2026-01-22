@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Media files (user content)
+media/*
+!media/.gitkeep
+
+# Environment variables and secrets
+.env
+config.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Claude
+.claude/

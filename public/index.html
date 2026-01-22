@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einrad Bildergalerie</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="screen">
+        <img src="unicycle.png" class="unicycle-bg" alt="Einrad">
+        <div class="login-container">
+            <img src="unicycle.png" class="unicycle-logo" alt="Einrad">
+            <h1>Bildergalerie</h1>
+            <form id="login-form">
+                <input type="password" id="password-input" placeholder="Passwort eingeben" required>
+                <button type="submit">Anmelden</button>
+            </form>
+            <div id="login-error" class="error-message"></div>
+        </div>
+    </div>
+
+    <!-- Gallery Screen -->
+    <div id="gallery-screen" class="screen hidden">
+        <header>
+            <div class="header-top">
+                <div class="header-title">
+                    <img src="unicycle.png" class="header-logo" alt="Einrad">
+                    <h1>Bildergalerie</h1>
+                </div>
+                <div class="header-controls">
+                    <span id="selected-count">0 ausgewählt</span>
+                    <button id="download-btn" class="btn-primary" disabled>Ausgewählte herunterladen</button>
+                    <button id="select-all-btn" class="btn-secondary">Alle auswählen</button>
+                    <button id="deselect-all-btn" class="btn-secondary">Alle abwählen</button>
+                    <button id="logout-btn" class="btn-secondary">Abmelden</button>
+                </div>
+            </div>
+            <!-- Breadcrumb will be inserted here by JavaScript -->
+        </header>
+
+        <div id="loading" class="loading hidden">Bilder werden geladen...</div>
+        <div id="error-message" class="error-message"></div>
+
+        <div id="gallery" class="gallery"></div>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="preview-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <div id="preview-container">
+                <img id="preview-image" src="" alt="Vorschau" class="hidden">
+                <video id="preview-video" controls class="hidden"></video>
+            </div>
+            <div class="modal-nav">
+                <button id="prev-btn" class="nav-btn">&#8249; Vorheriges</button>
+                <button id="next-btn" class="nav-btn">Nächstes &#8250;</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
