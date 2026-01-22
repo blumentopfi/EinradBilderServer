@@ -79,15 +79,19 @@ body {
     margin-top: 30px;
 }
 
+input[type="text"],
 input[type="password"] {
+    width: 100%;
     padding: 15px;
     border: 2px solid #f7931e;
     border-radius: 10px;
     font-size: 16px;
     transition: all 0.3s;
     background: rgba(255, 255, 255, 0.9);
+    box-sizing: border-box;
 }
 
+input[type="text"]:focus,
 input[type="password"]:focus {
     outline: none;
     border-color: #ff6b35;
@@ -176,6 +180,15 @@ header h1 {
     gap: 10px;
     align-items: center;
     flex-wrap: wrap;
+}
+
+.user-info {
+    font-size: 14px;
+    color: #666;
+    padding: 8px 16px;
+    background: rgba(255, 107, 53, 0.1);
+    border-radius: 8px;
+    font-weight: 500;
 }
 
 #selected-count {

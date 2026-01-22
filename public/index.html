@@ -14,7 +14,8 @@
             <img src="unicycle.png" class="unicycle-logo" alt="Einrad">
             <h1>Bildergalerie</h1>
             <form id="login-form">
-                <input type="password" id="password-input" placeholder="Passwort eingeben" required>
+                <input type="text" id="username-input" placeholder="Benutzername" required autocomplete="username">
+                <input type="password" id="password-input" placeholder="Passwort" required autocomplete="current-password">
                 <button type="submit">Anmelden</button>
             </form>
             <div id="login-error" class="error-message"></div>
@@ -30,6 +31,8 @@
                     <h1>Bildergalerie</h1>
                 </div>
                 <div class="header-controls">
+                    <span id="user-info" class="user-info"></span>
+                    <button id="admin-btn" class="btn-secondary hidden">Admin-Bereich</button>
                     <span id="selected-count">0 ausgewählt</span>
                     <button id="download-btn" class="btn-primary" disabled>Ausgewählte herunterladen</button>
                     <button id="select-all-btn" class="btn-secondary">Alle auswählen</button>

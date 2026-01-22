@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin-Bereich - Bildergalerie</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+    <!-- Admin Panel -->
+    <div id="admin-panel">
+        <header class="admin-header">
+            <div class="header-top">
+                <div class="header-title">
+                    <img src="unicycle.png" class="header-logo" alt="Einrad">
+                    <h1>Admin-Bereich</h1>
+                </div>
+                <div class="header-controls">
+                    <span id="admin-user-info" class="user-info"></span>
+                    <button id="back-to-gallery-btn" class="btn-secondary">Zur Galerie</button>
+                    <button id="admin-logout-btn" class="btn-secondary">Abmelden</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="admin-tabs">
+            <button class="tab-btn active" data-tab="users">
+                <span class="tab-icon">👥</span>
+                Benutzerverwaltung
+            </button>
+            <button class="tab-btn" data-tab="upload">
+                <span class="tab-icon">📤</span>
+                Medien hochladen
+            </button>
+        </nav>
+
+        <!-- Tab Content -->
+        <div class="admin-content">
+            <!-- User Management Tab -->
+            <div id="users-tab" class="tab-content active">
+                <div class="tab-header">
+                    <h2>Benutzerverwaltung</h2>
+                    <button id="create-user-btn" class="btn-primary">+ Neuer Benutzer</button>
+                </div>
+
+                <div id="users-loading" class="loading hidden">Lade Benutzer...</div>
+                <div id="users-error" class="error-message"></div>
+
+                <div class="users-table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Benutzername</th>
+                                <th>Anzeigename</th>
+                                <th>Rolle</th>
+                                <th>Status</th>
+                                <th>Erstellt am</th>
+                                <th>Letzter Login</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-tbody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Upload Tab -->
+            <div id="upload-tab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Medien hochladen</h2>
+                </div>
+
+                <!-- Folder Navigator -->
+                <div class="upload-section">
+                    <h3>Zielordner auswählen</h3>
+                    <div id="upload-breadcrumb" class="breadcrumb"></div>
+                    <div id="upload-folders" class="folder-grid"></div>
+                    <button id="create-folder-btn" class="btn-secondary">📁 Neuer Ordner</button>
+                </div>
+
+                <!-- Upload Area -->
+                <div class="upload-section">
+                    <h3>Dateien hochladen</h3>
+                    <div class="upload-destination">
+                        <strong>Upload-Ziel:</strong> <span id="upload-destination-path">/media</span>
+                    </div>
+                    <div id="drop-zone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <div class="upload-icon">📤</div>
+                            <p class="drop-zone-text">
+                                Dateien hierher ziehen oder klicken zum Auswählen
+                            </p>
+                            <p class="drop-zone-hint">
+                                Unterstützt: JPG, PNG, GIF, WebP, BMP, MP4, WebM, MOV, AVI, MKV
+                            </p>
+                            <input type="file" id="file-input" multiple accept="image/*,video/*" hidden>
+                        </div>
+                    </div>
+
+                    <!-- Upload Queue -->
+                    <div id="upload-queue" class="upload-queue hidden">
+                        <div class="upload-queue-header">
+                            <h4>Upload-Warteschlange</h4>
+                            <button id="cancel-all-btn" class="btn-secondary">Alle abbrechen</button>
+                        </div>
+                        <div id="upload-items"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Modal -->
+    <div id="user-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal" data-modal="user-modal">&times;</span>
+            <h2 id="user-modal-title">Neuer Benutzer</h2>
+
+            <form id="user-form">
+                <div class="form-group">
+                    <label for="user-username">Benutzername *</label>
+                    <input type="text" id="user-username" required
+                           pattern="[a-zA-Z0-9_-]+"
+                           minlength="3" maxlength="30"
+                           placeholder="z.B. max.mustermann">
+                    <small>3-30 Zeichen, nur Buchstaben, Zahlen, - und _</small>
+                </div>
+
+                <div class="form-group" id="password-group">
+                    <label for="user-password">Passwort *</label>
+                    <input type="password" id="user-password" required minlength="8"
+                           placeholder="Mindestens 8 Zeichen">
+                    <small>Mindestens 8 Zeichen</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="user-displayname">Anzeigename</label>
+                    <input type="text" id="user-displayname"
+                           placeholder="z.B. Max Mustermann">
+                    <small>Optional, wird in der Oberfläche angezeigt</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="user-role">Rolle *</label>
+                    <select id="user-role" required>
+                        <option value="user">Benutzer</option>
+                        <option value="uploader">Uploader</option>
+                        <option value="admin">Administrator</option>
+                    </select>
+                    <small>Benutzer: Nur ansehen | Uploader: Hochladen | Admin: Alles</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary cancel-btn" data-modal="user-modal">
+                        Abbrechen
+                    </button>
+                    <button type="submit" class="btn-primary">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div id="password-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal" data-modal="password-modal">&times;</span>
+            <h2>Passwort zurücksetzen</h2>
+
+            <form id="password-form">
+                <input type="hidden" id="password-user-id">
+
+                <div class="form-group">
+                    <label for="new-password">Neues Passwort *</label>
+                    <input type="password" id="new-password" required minlength="8"
+                           placeholder="Mindestens 8 Zeichen">
+                </div>
+
+                <div class="form-group">
+                    <label for="confirm-password">Passwort bestätigen *</label>
+                    <input type="password" id="confirm-password" required minlength="8"
+                           placeholder="Passwort wiederholen">
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary cancel-btn" data-modal="password-modal">
+                        Abbrechen
+                    </button>
+                    <button type="submit" class="btn-primary">Passwort zurücksetzen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div id="folder-modal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-modal" data-modal="folder-modal">&times;</span>
+            <h2>Neuer Ordner</h2>
+
+            <form id="folder-form">
+                <div class="form-group">
+                    <label for="folder-name">Ordnername *</label>
+                    <input type="text" id="folder-name" required
+                           pattern="[a-zA-Z0-9äöüÄÖÜß _-]+"
+                           placeholder="z.B. 2026, Events, Sommer">
+                    <small>Nur Buchstaben, Zahlen, Leerzeichen, - und _</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Erstellt in:</label>
+                    <div id="folder-current-path" class="current-path">/media</div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary cancel-btn" data-modal="folder-modal">
+                        Abbrechen
+                    </button>
+                    <button type="submit" class="btn-primary">Erstellen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirm-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="confirm-title">Bestätigung</h2>
+            <p id="confirm-message"></p>
+            <div class="form-actions">
+                <button id="confirm-cancel" class="btn-secondary">Abbrechen</button>
+                <button id="confirm-ok" class="btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>

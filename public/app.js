@@ -4,13 +4,17 @@ let folders = [];
 let currentPath = '';
 let selectedImages = new Set();
 let currentPreviewIndex = -1;
+let currentUser = null;
 
 // DOM elements
 const loginScreen = document.getElementById('login-screen');
 const galleryScreen = document.getElementById('gallery-screen');
 const loginForm = document.getElementById('login-form');
+const usernameInput = document.getElementById('username-input');
 const passwordInput = document.getElementById('password-input');
 const loginError = document.getElementById('login-error');
+const userInfo = document.getElementById('user-info');
+const adminBtn = document.getElementById('admin-btn');
 const gallery = document.getElementById('gallery');
 const loading = document.getElementById('loading');
 const errorMessage = document.getElementById('error-message');
@@ -34,6 +38,7 @@ async function checkAuth() {
         const response = await fetch('/check-auth');
         const data = await response.json();
         if (data.authenticated) {
+            currentUser = data.user;
             showGallery();
         } else {
             showLogin();
@@ -46,6 +51,7 @@ async function checkAuth() {
 function showLogin() {
     loginScreen.classList.remove('hidden');
     galleryScreen.classList.add('hidden');
+    currentUser = null;
 }
 
 function showGallery() {
@@ -55,12 +61,32 @@ function showGallery() {
     loginScreen.classList.add('hidden');
     galleryScreen.classList.remove('hidden');
     console.log('Classes updated - loginScreen:', loginScreen.className, 'galleryScreen:', galleryScreen.className);
+
+    // Update user info display
+    if (currentUser) {
+        userInfo.textContent = `Angemeldet als: ${currentUser.displayName}`;
+
+        // Show admin button if user is admin or uploader
+        if (currentUser.role === 'admin' || currentUser.role === 'uploader') {
+            adminBtn.classList.remove('hidden');
+            // Change button text for uploaders
+            if (currentUser.role === 'uploader') {
+                adminBtn.textContent = 'Upload-Bereich';
+            } else {
+                adminBtn.textContent = 'Admin-Bereich';
+            }
+        } else {
+            adminBtn.classList.add('hidden');
+        }
+    }
+
     loadImages();
 }
 
 // Login handling
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const username = usernameInput.value.trim();
     const password = passwordInput.value;
 
     try {
@@ -68,24 +94,33 @@ loginForm.addEventListener('submit', async (e) => {
         const response = await fetch('/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ password })
+            body: JSON.stringify({ username, password })
         });
 
         console.log('Login response:', response.status, response.ok);
 
         if (response.ok) {
+            const data = await response.json();
+            currentUser = data.user;
             console.log('Login successful, showing gallery...');
             loginError.textContent = '';
+            usernameInput.value = '';
             passwordInput.value = '';
             showGallery();
         } else {
             console.log('Login failed');
-            loginError.textContent = 'Ungültiges Passwort';
+            const errorData = await response.json();
+            loginError.textContent = errorData.error || 'Ungültiger Benutzername oder Passwort';
         }
     } catch (error) {
         console.error('Login error:', error);
         loginError.textContent = 'Verbindungsfehler';
     }
+});
+
+// Admin button handling
+adminBtn.addEventListener('click', () => {
+    window.location.href = '/admin.html';
 });
 
 // Logout handling
@@ -94,6 +129,7 @@ logoutBtn.addEventListener('click', async () => {
         await fetch('/logout', { method: 'POST' });
         selectedImages.clear();
         images = [];
+        currentUser = null;
         gallery.innerHTML = '';
         showLogin();
     } catch (error) {
@@ -145,15 +181,17 @@ function renderGallery() {
     });
 
     // Render files
-    if (folders.length === 0 && images.length === 0) {
-        gallery.innerHTML += '<p>Keine Medien im Verzeichnis gefunden</p>';
-        return;
-    }
-
     images.forEach((fileObj, index) => {
         const card = createMediaCard(fileObj, index);
         gallery.appendChild(card);
     });
+
+    // Show message only if nothing to display (no folders, no files, and not in a subfolder with back button)
+    if (folders.length === 0 && images.length === 0 && !currentPath) {
+        const message = document.createElement('p');
+        message.textContent = 'Keine Medien im Verzeichnis gefunden';
+        gallery.appendChild(message);
+    }
 
     updateSelectedCount();
 }
@@ -424,6 +462,7 @@ function updatePreview() {
     if (fileObj.type === 'video') {
         // Show video, hide image
         previewImage.classList.add('hidden');
+        previewImage.src = ''; // Clear image source
         previewVideo.classList.remove('hidden');
         previewVideo.src = `/api/media/${encodeURIComponent(fileObj.path)}`;
         previewVideo.load();
@@ -431,6 +470,7 @@ function updatePreview() {
         // Show image, hide video
         previewVideo.classList.add('hidden');
         previewVideo.pause();
+        previewVideo.src = ''; // Clear video source
         previewImage.classList.remove('hidden');
         previewImage.src = `/api/media/${encodeURIComponent(fileObj.path)}`;
         previewImage.alt = fileObj.name;

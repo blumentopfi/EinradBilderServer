@@ -9,6 +9,14 @@ media/*
 .env
 config.json
 
+# Database
+gallery.db
+gallery.db-shm
+gallery.db-wal
+*.db
+*.db-shm
+*.db-wal
+
 # Logs
 *.log
 npm-debug.log*
