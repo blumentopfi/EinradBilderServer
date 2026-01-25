@@ -44,6 +44,7 @@ app.use(helmet({
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "blob:"],
       mediaSrc: ["'self'", "blob:"],
+      upgradeInsecureRequests: USE_SECURE_COOKIES ? [] : null, // Only upgrade when using HTTPS
     },
   },
   hsts: USE_SECURE_COOKIES ? {
