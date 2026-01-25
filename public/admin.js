@@ -10,6 +10,7 @@ let editingUserId = null;
 // DOM Elements
 const adminUserInfo = document.getElementById('admin-user-info');
 const backToGalleryBtn = document.getElementById('back-to-gallery-btn');
+const adminFaqBtn = document.getElementById('admin-faq-btn');
 const adminLogoutBtn = document.getElementById('admin-logout-btn');
 const tabButtons = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
@@ -116,6 +117,10 @@ backToGalleryBtn.addEventListener('click', () => {
     window.location.href = '/';
 });
 
+adminFaqBtn.addEventListener('click', () => {
+    window.location.href = '/faq.html';
+});
+
 adminLogoutBtn.addEventListener('click', async () => {
     try {
         await fetch('/logout', { method: 'POST' });
@@ -213,7 +218,7 @@ function editUser(userId) {
     editingUserId = userId;
     document.getElementById('user-modal-title').textContent = 'Benutzer bearbeiten';
     document.getElementById('user-username').value = user.username;
-    document.getElementById('user-username').disabled = true;
+    document.getElementById('user-username').disabled = false; // Allow username editing
     document.getElementById('user-displayname').value = user.displayName;
     document.getElementById('user-role').value = user.role;
 
@@ -243,7 +248,7 @@ userForm.addEventListener('submit', async (e) => {
             response = await fetch(`/api/admin/users/${editingUserId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ displayName, role })
+                body: JSON.stringify({ username, displayName, role })
             });
         } else {
             // Create new user

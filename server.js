@@ -20,6 +20,14 @@ const {
   deleteUser
 } = require('./lib/userManager');
 
+const {
+  getAllFaqItems,
+  getFaqItemById,
+  createFaqItem,
+  updateFaqItem,
+  deleteFaqItem
+} = require('./lib/faqManager');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const IMAGES_DIR = path.resolve(process.env.IMAGES_DIR || './media');
@@ -673,6 +681,81 @@ app.post('/api/admin/folders', requireUploader, async (req, res) => {
   } catch (error) {
     console.error('Create folder error:', error);
     res.status(500).json({ error: 'Fehler beim Erstellen des Ordners' });
+  }
+});
+
+// ===== FAQ API ENDPOINTS =====
+
+// Get all FAQ items (accessible to all authenticated users)
+app.get('/api/faq', requireAuth, (req, res) => {
+  try {
+    const items = getAllFaqItems();
+    res.json({ items });
+  } catch (error) {
+    console.error('Get FAQ items error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der FAQ-Einträge' });
+  }
+});
+
+// Create FAQ item (admin only)
+app.post('/api/faq', requireAdmin, (req, res) => {
+  try {
+    const { question, answer, category, displayOrder } = req.body;
+
+    if (!question || !answer) {
+      return res.status(400).json({ error: 'Frage und Antwort erforderlich' });
+    }
+
+    const item = createFaqItem(
+      question,
+      answer,
+      category || null,
+      displayOrder || 0,
+      req.session.username
+    );
+
+    res.json({
+      success: true,
+      item
+    });
+  } catch (error) {
+    console.error('Create FAQ item error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Update FAQ item (admin only)
+app.put('/api/faq/:itemId', requireAdmin, (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const updates = req.body;
+
+    const item = updateFaqItem(itemId, updates, req.session.username);
+
+    res.json({
+      success: true,
+      item
+    });
+  } catch (error) {
+    console.error('Update FAQ item error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Delete FAQ item (admin only)
+app.delete('/api/faq/:itemId', requireAdmin, (req, res) => {
+  try {
+    const { itemId } = req.params;
+
+    deleteFaqItem(itemId, req.session.username);
+
+    res.json({
+      success: true,
+      message: 'FAQ-Eintrag erfolgreich gelöscht'
+    });
+  } catch (error) {
+    console.error('Delete FAQ item error:', error);
+    res.status(400).json({ error: error.message });
   }
 });
 
