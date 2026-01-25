@@ -165,7 +165,7 @@ function createFaqItemElement(item) {
 
     const answer = document.createElement('p');
     answer.className = 'faq-answer';
-    answer.textContent = item.answer;
+    answer.innerHTML = linkifyText(item.answer);
     div.appendChild(answer);
 
     return div;
@@ -320,4 +320,18 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Convert URLs in text to clickable links
+function linkifyText(text) {
+    // First escape HTML to prevent XSS
+    const escaped = escapeHtml(text);
+
+    // Regex to match URLs
+    const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
+
+    // Replace URLs with anchor tags
+    return escaped.replace(urlRegex, (url) => {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    });
 }

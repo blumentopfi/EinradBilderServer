@@ -87,7 +87,19 @@
     color: #555;
     line-height: 1.6;
     white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     margin: 0;
+}
+
+.faq-answer a {
+    color: #ff6b35;
+    text-decoration: underline;
+    word-break: break-all;
+}
+
+.faq-answer a:hover {
+    color: #f7931e;
 }
 
 .no-faq {
