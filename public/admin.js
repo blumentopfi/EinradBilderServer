@@ -11,6 +11,7 @@ let editingUserId = null;
 const adminUserInfo = document.getElementById('admin-user-info');
 const backToGalleryBtn = document.getElementById('back-to-gallery-btn');
 const adminFaqBtn = document.getElementById('admin-faq-btn');
+const adminChangePasswordBtn = document.getElementById('admin-change-password-btn');
 const adminLogoutBtn = document.getElementById('admin-logout-btn');
 const tabButtons = document.querySelectorAll('.tab-btn');
 const tabContents = document.querySelectorAll('.tab-content');
@@ -119,6 +120,10 @@ backToGalleryBtn.addEventListener('click', () => {
 
 adminFaqBtn.addEventListener('click', () => {
     window.location.href = '/faq.html';
+});
+
+adminChangePasswordBtn.addEventListener('click', () => {
+    window.location.href = '/?changePassword=true';
 });
 
 adminLogoutBtn.addEventListener('click', async () => {

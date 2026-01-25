@@ -6,6 +6,21 @@
     padding: 0 20px;
 }
 
+.faq-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ff6b35;
+}
+
+.faq-toolbar h2 {
+    margin: 0;
+    color: #333;
+    font-size: 1.8em;
+}
+
 .faq-list {
     display: flex;
     flex-direction: column;

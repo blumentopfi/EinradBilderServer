@@ -2,6 +2,7 @@
 const faqUserInfo = document.getElementById('faq-user-info');
 const backToGalleryBtn = document.getElementById('back-to-gallery-btn');
 const adminNavBtn = document.getElementById('admin-nav-btn');
+const faqChangePasswordBtn = document.getElementById('faq-change-password-btn');
 const faqLogoutBtn = document.getElementById('faq-logout-btn');
 const createFaqBtn = document.getElementById('create-faq-btn');
 const faqLoading = document.getElementById('faq-loading');
@@ -31,7 +32,7 @@ async function checkAuth() {
         }
 
         currentUser = data.user;
-        faqUserInfo.textContent = `${currentUser.displayName} (${getRoleName(currentUser.role)})`;
+        faqUserInfo.textContent = `Angemeldet als: ${currentUser.displayName}`;
 
         // Show create button only for admins
         if (currentUser.role === 'admin') {
@@ -66,6 +67,10 @@ backToGalleryBtn.addEventListener('click', () => {
 
 adminNavBtn.addEventListener('click', () => {
     window.location.href = '/admin.html';
+});
+
+faqChangePasswordBtn.addEventListener('click', () => {
+    window.location.href = '/?changePassword=true';
 });
 
 faqLogoutBtn.addEventListener('click', async () => {

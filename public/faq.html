@@ -20,13 +20,17 @@
                     <button id="back-to-gallery-btn" class="btn-nav">Galerie</button>
                     <button id="admin-nav-btn" class="btn-nav hidden">Admin</button>
                     <button id="faq-nav-btn" class="btn-nav active">FAQ</button>
-                    <button id="create-faq-btn" class="btn-primary hidden">+ Neue Frage</button>
+                    <button id="faq-change-password-btn" class="btn-secondary">Passwort ändern</button>
                     <button id="faq-logout-btn" class="btn-secondary">Abmelden</button>
                 </div>
             </div>
         </header>
 
         <div class="faq-content">
+            <div class="faq-toolbar">
+                <h2>Häufig gestellte Fragen</h2>
+                <button id="create-faq-btn" class="btn-primary hidden">+ Neue Frage</button>
+            </div>
             <div id="faq-loading" class="loading hidden">Lade FAQ...</div>
             <div id="faq-error" class="error-message"></div>
             <div id="faq-list" class="faq-list"></div>

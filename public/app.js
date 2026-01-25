@@ -91,6 +91,16 @@ function showGallery() {
         }
     }
 
+    // Check if we should open change password modal
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('changePassword') === 'true') {
+        changePasswordModal.classList.remove('hidden');
+        changePasswordForm.reset();
+        changePasswordError.textContent = '';
+        // Clean up URL
+        window.history.replaceState({}, '', '/');
+    }
+
     loadImages();
 }
 
