@@ -200,6 +200,8 @@ createUserBtn.addEventListener('click', () => {
     editingUserId = null;
     document.getElementById('user-modal-title').textContent = 'Neuer Benutzer';
     document.getElementById('password-group').style.display = 'block';
+    document.getElementById('user-password').setAttribute('required', 'required');
+    document.getElementById('user-username').disabled = false;
     userForm.reset();
     openModal(userModal);
 });
@@ -215,6 +217,7 @@ function editUser(userId) {
     document.getElementById('user-displayname').value = user.displayName;
     document.getElementById('user-role').value = user.role;
     document.getElementById('password-group').style.display = 'none';
+    document.getElementById('user-password').removeAttribute('required');
 
     openModal(userModal);
 }
