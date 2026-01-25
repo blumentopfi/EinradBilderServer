@@ -327,7 +327,7 @@ async function loadUploadFolders(path = '') {
 
         if (response.ok) {
             renderUploadBreadcrumb(path);
-            renderUploadFolders(data.folders);
+            renderUploadFolders(data.folders, data.files || []);
             updateUploadDestination(path);
         } else {
             console.error('Load folders error:', data.error);
@@ -377,7 +377,7 @@ function renderUploadBreadcrumb(path) {
     });
 }
 
-function renderUploadFolders(folders) {
+function renderUploadFolders(folders, files = []) {
     uploadFolders.innerHTML = '';
 
     // Add back button if not at root
@@ -393,11 +393,12 @@ function renderUploadFolders(folders) {
         uploadFolders.appendChild(backCard);
     }
 
-    if (folders.length === 0 && !currentUploadPath) {
-        uploadFolders.innerHTML = '<p style="color: #666; padding: 20px;">Keine Unterordner vorhanden</p>';
+    if (folders.length === 0 && files.length === 0 && !currentUploadPath) {
+        uploadFolders.innerHTML = '<p style="color: #666; padding: 20px;">Keine Unterordner oder Dateien vorhanden</p>';
         return;
     }
 
+    // Render folders first
     folders.forEach(folder => {
         const card = document.createElement('div');
         card.className = 'folder-card';
@@ -406,6 +407,20 @@ function renderUploadFolders(folders) {
             <div class="folder-name">${escapeHtml(folder.name)}</div>
         `;
         card.addEventListener('click', () => loadUploadFolders(folder.path));
+        uploadFolders.appendChild(card);
+    });
+
+    // Render files (read-only, no click action)
+    files.forEach(file => {
+        const card = document.createElement('div');
+        card.className = 'folder-card file-card';
+        const icon = file.type === 'video' ? '🎥' : '🖼️';
+        card.innerHTML = `
+            <div class="folder-icon">${icon}</div>
+            <div class="folder-name">${escapeHtml(file.name)}</div>
+        `;
+        card.style.cursor = 'default';
+        card.style.opacity = '0.7';
         uploadFolders.appendChild(card);
     });
 }

@@ -425,6 +425,20 @@
     transform: translateY(-5px);
 }
 
+.folder-card.file-card {
+    background: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.folder-card.file-card:hover {
+    transform: none;
+}
+
+.folder-card.file-card .folder-name {
+    font-size: 0.85em;
+    color: #6c757d;
+}
+
 /* Forms */
 .form-group {
     margin-bottom: 20px;
