@@ -32,21 +32,24 @@
                 </div>
                 <div class="header-controls">
                     <span id="user-info" class="user-info"></span>
-                    <div class="header-actions">
-                        <span id="selected-count">0 ausgewählt</span>
-                        <button id="download-btn" class="btn-primary" disabled>Ausgewählte herunterladen</button>
-                        <button id="select-all-btn" class="btn-secondary">Alle auswählen</button>
-                        <button id="deselect-all-btn" class="btn-secondary">Alle abwählen</button>
-                    </div>
-                    <div class="header-nav">
-                        <button id="admin-btn" class="btn-secondary hidden">Admin-Bereich</button>
-                        <button id="faq-btn" class="btn-secondary">FAQ</button>
-                        <button id="change-password-btn" class="btn-secondary">Passwort ändern</button>
-                        <button id="logout-btn" class="btn-secondary">Abmelden</button>
-                    </div>
+                    <button id="gallery-nav-btn" class="btn-nav active">Galerie</button>
+                    <button id="admin-btn" class="btn-nav hidden">Admin</button>
+                    <button id="faq-btn" class="btn-nav">FAQ</button>
+                    <button id="change-password-btn" class="btn-secondary">Passwort ändern</button>
+                    <button id="logout-btn" class="btn-secondary">Abmelden</button>
                 </div>
             </div>
             <!-- Breadcrumb will be inserted here by JavaScript -->
+            <div class="gallery-toolbar">
+                <div class="toolbar-left">
+                    <span id="selected-count" class="selected-count">0 ausgewählt</span>
+                </div>
+                <div class="toolbar-right">
+                    <button id="download-btn" class="btn-primary" disabled>Ausgewählte herunterladen</button>
+                    <button id="select-all-btn" class="btn-secondary">Alle auswählen</button>
+                    <button id="deselect-all-btn" class="btn-secondary">Alle abwählen</button>
+                </div>
+            </div>
         </header>
 
         <div id="loading" class="loading hidden">Bilder werden geladen...</div>

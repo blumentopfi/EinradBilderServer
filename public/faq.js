@@ -1,6 +1,7 @@
 // DOM Elements
 const faqUserInfo = document.getElementById('faq-user-info');
 const backToGalleryBtn = document.getElementById('back-to-gallery-btn');
+const adminNavBtn = document.getElementById('admin-nav-btn');
 const faqLogoutBtn = document.getElementById('faq-logout-btn');
 const createFaqBtn = document.getElementById('create-faq-btn');
 const faqLoading = document.getElementById('faq-loading');
@@ -37,6 +38,11 @@ async function checkAuth() {
             createFaqBtn.classList.remove('hidden');
         }
 
+        // Show admin button for admins and uploaders
+        if (currentUser.role === 'admin' || currentUser.role === 'uploader') {
+            adminNavBtn.classList.remove('hidden');
+        }
+
         loadFaqItems();
     } catch (error) {
         console.error('Auth check error:', error);
@@ -56,6 +62,10 @@ function getRoleName(role) {
 // Navigation
 backToGalleryBtn.addEventListener('click', () => {
     window.location.href = '/';
+});
+
+adminNavBtn.addEventListener('click', () => {
+    window.location.href = '/admin.html';
 });
 
 faqLogoutBtn.addEventListener('click', async () => {
