@@ -28,6 +28,14 @@ const {
   deleteFaqItem
 } = require('./lib/faqManager');
 
+const {
+  saveScore,
+  getTopScores,
+  getUserBestScore,
+  getUserRecentScores,
+  getUserRank
+} = require('./lib/gameManager');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const IMAGES_DIR = path.resolve(process.env.IMAGES_DIR || './media');
@@ -755,6 +763,75 @@ app.delete('/api/faq/:itemId', requireAdmin, (req, res) => {
     });
   } catch (error) {
     console.error('Delete FAQ item error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ===== GAME API ROUTES =====
+
+// Get leaderboard (top scores)
+app.get('/api/game/leaderboard', requireAuth, apiLimiter, (req, res) => {
+  try {
+    let limit = parseInt(req.query.limit) || 10;
+    if (limit < 1 || limit > 100) {
+      limit = 10;
+    }
+
+    const scores = getTopScores(limit);
+    res.json({ scores });
+  } catch (error) {
+    console.error('Get leaderboard error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der Bestenliste' });
+  }
+});
+
+// Get user's game statistics
+app.get('/api/game/stats', requireAuth, apiLimiter, (req, res) => {
+  try {
+    const userId = req.session.userId;
+
+    const bestScore = getUserBestScore(userId);
+    const recentScores = getUserRecentScores(userId, 10);
+    const rank = getUserRank(userId);
+
+    res.json({
+      bestScore,
+      recentScores,
+      rank
+    });
+  } catch (error) {
+    console.error('Get game stats error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der Statistiken' });
+  }
+});
+
+// Submit a new game score
+app.post('/api/game/score', requireAuth, apiLimiter, async (req, res) => {
+  try {
+    const { score, duration, difficultyReached } = req.body;
+    const userId = req.session.userId;
+
+    // Validate inputs
+    if (typeof score !== 'number' || score < 0 || score > 1000000) {
+      return res.status(400).json({ error: 'Ungültiger Score (0-1.000.000 erlaubt)' });
+    }
+
+    if (typeof duration !== 'number' || duration < 0 || duration > 3600) {
+      return res.status(400).json({ error: 'Ungültige Spieldauer (0-3600 Sekunden erlaubt)' });
+    }
+
+    if (typeof difficultyReached !== 'number' || difficultyReached < 1 || difficultyReached > 20) {
+      return res.status(400).json({ error: 'Ungültige Schwierigkeit (1-20 erlaubt)' });
+    }
+
+    const savedScore = saveScore(userId, score, duration, difficultyReached);
+
+    res.json({
+      success: true,
+      score: savedScore
+    });
+  } catch (error) {
+    console.error('Save score error:', error);
     res.status(400).json({ error: error.message });
   }
 });

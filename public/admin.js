@@ -12,6 +12,7 @@ const adminUserInfo = document.getElementById('admin-user-info');
 const adminUserMenuBtn = document.getElementById('admin-user-menu-btn');
 const adminUserDropdown = document.getElementById('admin-user-dropdown');
 const backToGalleryBtn = document.getElementById('back-to-gallery-btn');
+const adminGameBtn = document.getElementById('admin-game-btn');
 const adminFaqBtn = document.getElementById('admin-faq-btn');
 const adminChangePasswordBtn = document.getElementById('admin-change-password-btn');
 const adminLogoutBtn = document.getElementById('admin-logout-btn');
@@ -118,6 +119,10 @@ function switchTab(tabName) {
 
 backToGalleryBtn.addEventListener('click', () => {
     window.location.href = '/';
+});
+
+adminGameBtn.addEventListener('click', () => {
+    window.location.href = '/game.html';
 });
 
 adminFaqBtn.addEventListener('click', () => {

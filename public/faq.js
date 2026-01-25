@@ -3,6 +3,7 @@ const faqUserInfo = document.getElementById('faq-user-info');
 const faqUserMenuBtn = document.getElementById('faq-user-menu-btn');
 const faqUserDropdown = document.getElementById('faq-user-dropdown');
 const backToGalleryBtn = document.getElementById('back-to-gallery-btn');
+const faqGameBtn = document.getElementById('faq-game-btn');
 const adminNavBtn = document.getElementById('admin-nav-btn');
 const faqChangePasswordBtn = document.getElementById('faq-change-password-btn');
 const faqLogoutBtn = document.getElementById('faq-logout-btn');
@@ -65,6 +66,10 @@ function getRoleName(role) {
 // Navigation
 backToGalleryBtn.addEventListener('click', () => {
     window.location.href = '/';
+});
+
+faqGameBtn.addEventListener('click', () => {
+    window.location.href = '/game.html';
 });
 
 adminNavBtn.addEventListener('click', () => {
