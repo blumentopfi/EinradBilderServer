@@ -216,8 +216,13 @@ function editUser(userId) {
     document.getElementById('user-username').disabled = true;
     document.getElementById('user-displayname').value = user.displayName;
     document.getElementById('user-role').value = user.role;
-    document.getElementById('password-group').style.display = 'none';
-    document.getElementById('user-password').removeAttribute('required');
+
+    // Hide and disable password field for editing
+    const passwordField = document.getElementById('user-password');
+    const passwordGroup = document.getElementById('password-group');
+    passwordGroup.style.display = 'none';
+    passwordField.removeAttribute('required');
+    passwordField.value = ''; // Clear value to prevent validation issues
 
     openModal(userModal);
 }
