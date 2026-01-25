@@ -1,5 +1,7 @@
 // DOM Elements
 const faqUserInfo = document.getElementById('faq-user-info');
+const faqUserMenuBtn = document.getElementById('faq-user-menu-btn');
+const faqUserDropdown = document.getElementById('faq-user-dropdown');
 const backToGalleryBtn = document.getElementById('back-to-gallery-btn');
 const adminNavBtn = document.getElementById('admin-nav-btn');
 const faqChangePasswordBtn = document.getElementById('faq-change-password-btn');
@@ -67,6 +69,21 @@ backToGalleryBtn.addEventListener('click', () => {
 
 adminNavBtn.addEventListener('click', () => {
     window.location.href = '/admin.html';
+});
+
+// User menu dropdown handling
+faqUserMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    faqUserDropdown.classList.toggle('hidden');
+    faqUserMenuBtn.classList.toggle('active');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!faqUserMenuBtn.contains(e.target) && !faqUserDropdown.contains(e.target)) {
+        faqUserDropdown.classList.add('hidden');
+        faqUserMenuBtn.classList.remove('active');
+    }
 });
 
 faqChangePasswordBtn.addEventListener('click', () => {

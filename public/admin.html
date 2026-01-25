@@ -17,12 +17,23 @@
                     <h1>Admin-Bereich</h1>
                 </div>
                 <div class="header-controls">
-                    <span id="admin-user-info" class="user-info"></span>
                     <button id="back-to-gallery-btn" class="btn-nav">Galerie</button>
                     <button id="admin-nav-btn" class="btn-nav active">Admin</button>
                     <button id="admin-faq-btn" class="btn-nav">FAQ</button>
-                    <button id="admin-change-password-btn" class="btn-secondary">Passwort ändern</button>
-                    <button id="admin-logout-btn" class="btn-secondary">Abmelden</button>
+                    <div class="user-menu">
+                        <button id="admin-user-menu-btn" class="user-menu-btn">
+                            <span id="admin-user-info"></span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div id="admin-user-dropdown" class="user-dropdown hidden">
+                            <button id="admin-change-password-btn" class="dropdown-item">
+                                <span class="dropdown-icon">🔑</span> Passwort ändern
+                            </button>
+                            <button id="admin-logout-btn" class="dropdown-item">
+                                <span class="dropdown-icon">🚪</span> Abmelden
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>

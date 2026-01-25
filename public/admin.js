@@ -9,6 +9,8 @@ let editingUserId = null;
 
 // DOM Elements
 const adminUserInfo = document.getElementById('admin-user-info');
+const adminUserMenuBtn = document.getElementById('admin-user-menu-btn');
+const adminUserDropdown = document.getElementById('admin-user-dropdown');
 const backToGalleryBtn = document.getElementById('back-to-gallery-btn');
 const adminFaqBtn = document.getElementById('admin-faq-btn');
 const adminChangePasswordBtn = document.getElementById('admin-change-password-btn');
@@ -120,6 +122,21 @@ backToGalleryBtn.addEventListener('click', () => {
 
 adminFaqBtn.addEventListener('click', () => {
     window.location.href = '/faq.html';
+});
+
+// User menu dropdown handling
+adminUserMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    adminUserDropdown.classList.toggle('hidden');
+    adminUserMenuBtn.classList.toggle('active');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!adminUserMenuBtn.contains(e.target) && !adminUserDropdown.contains(e.target)) {
+        adminUserDropdown.classList.add('hidden');
+        adminUserMenuBtn.classList.remove('active');
+    }
 });
 
 adminChangePasswordBtn.addEventListener('click', () => {

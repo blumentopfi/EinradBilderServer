@@ -14,6 +14,8 @@ const usernameInput = document.getElementById('username-input');
 const passwordInput = document.getElementById('password-input');
 const loginError = document.getElementById('login-error');
 const userInfo = document.getElementById('user-info');
+const userMenuBtn = document.getElementById('user-menu-btn');
+const userDropdown = document.getElementById('user-dropdown');
 const adminBtn = document.getElementById('admin-btn');
 const faqBtn = document.getElementById('faq-btn');
 const gallery = document.getElementById('gallery');
@@ -143,8 +145,25 @@ faqBtn.addEventListener('click', () => {
     window.location.href = '/faq.html';
 });
 
+// User menu dropdown handling
+userMenuBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    userDropdown.classList.toggle('hidden');
+    userMenuBtn.classList.toggle('active');
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+        userDropdown.classList.add('hidden');
+        userMenuBtn.classList.remove('active');
+    }
+});
+
 // Change password handling
 changePasswordBtn.addEventListener('click', () => {
+    userDropdown.classList.add('hidden');
+    userMenuBtn.classList.remove('active');
     changePasswordModal.classList.remove('hidden');
     changePasswordForm.reset();
     changePasswordError.textContent = '';

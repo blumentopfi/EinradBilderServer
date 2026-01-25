@@ -31,12 +31,23 @@
                     <h1>Bildergalerie</h1>
                 </div>
                 <div class="header-controls">
-                    <span id="user-info" class="user-info"></span>
                     <button id="gallery-nav-btn" class="btn-nav active">Galerie</button>
                     <button id="admin-btn" class="btn-nav hidden">Admin</button>
                     <button id="faq-btn" class="btn-nav">FAQ</button>
-                    <button id="change-password-btn" class="btn-secondary">Passwort ändern</button>
-                    <button id="logout-btn" class="btn-secondary">Abmelden</button>
+                    <div class="user-menu">
+                        <button id="user-menu-btn" class="user-menu-btn">
+                            <span id="user-info"></span>
+                            <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div id="user-dropdown" class="user-dropdown hidden">
+                            <button id="change-password-btn" class="dropdown-item">
+                                <span class="dropdown-icon">🔑</span> Passwort ändern
+                            </button>
+                            <button id="logout-btn" class="dropdown-item">
+                                <span class="dropdown-icon">🚪</span> Abmelden
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
             <!-- Breadcrumb will be inserted here by JavaScript -->
