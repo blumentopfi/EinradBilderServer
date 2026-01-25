@@ -16,7 +16,6 @@ const loginError = document.getElementById('login-error');
 const userInfo = document.getElementById('user-info');
 const adminBtn = document.getElementById('admin-btn');
 const faqBtn = document.getElementById('faq-btn');
-const gameBtn = document.getElementById('game-btn');
 const gallery = document.getElementById('gallery');
 const loading = document.getElementById('loading');
 const errorMessage = document.getElementById('error-message');
@@ -138,11 +137,6 @@ adminBtn.addEventListener('click', () => {
 // FAQ button handling
 faqBtn.addEventListener('click', () => {
     window.location.href = '/faq.html';
-});
-
-// Game button handling
-gameBtn.addEventListener('click', () => {
-    window.location.href = '/game.html';
 });
 
 // Change password handling
