@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einrad-Spiel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: white;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        #gameCanvas {
+            background: linear-gradient(180deg, #87ceeb 0%, #f0e68c 100%);
+            border: 5px solid white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            display: block;
+            margin: 0 auto;
+            cursor: pointer;
+        }
+
+        .game-info {
+            margin-top: 20px;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .score {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .high-score {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .controls {
+            margin-top: 15px;
+            color: white;
+            font-size: 0.9em;
+        }
+
+        .back-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 1em;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .back-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            #gameCanvas {
+                width: 100%;
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🚴 Einrad-Spiel 🚴</h1>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div class="game-info">
+            <div class="score">Punkte: <span id="score">0</span></div>
+            <div class="high-score">Highscore: <span id="highScore">0</span></div>
+            <div class="controls">
+                🎮 Drücke LEERTASTE oder klicke zum Springen
+            </div>
+        </div>
+        <button class="back-btn" onclick="window.location.href='/'">Zurück zur Galerie</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const highScoreEl = document.getElementById('highScore');
+
+        // Game variables
+        let gameRunning = false;
+        let gameOver = false;
+        let score = 0;
+        let highScore = localStorage.getItem('unicycleHighScore') || 0;
+        highScoreEl.textContent = highScore;
+
+        // Player (unicyclist)
+        const player = {
+            x: 100,
+            y: 300,
+            width: 40,
+            height: 60,
+            velocityY: 0,
+            gravity: 0.6,
+            jumpPower: -12,
+            isJumping: false
+        };
+
+        // Ground
+        const ground = {
+            y: 360,
+            height: 40
+        };
+
+        // Obstacles
+        let obstacles = [];
+        let obstacleTimer = 0;
+        let obstacleInterval = 100;
+
+        // Game speed
+        let gameSpeed = 5;
+
+        // Draw player (unicyclist)
+        function drawPlayer() {
+            ctx.save();
+
+            // Body
+            ctx.fillStyle = '#ff6b35';
+            ctx.beginPath();
+            ctx.arc(player.x + 20, player.y + 15, 12, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.fillStyle = '#ffdbac';
+            ctx.beginPath();
+            ctx.arc(player.x + 20, player.y + 5, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Arms
+            ctx.strokeStyle = '#ff6b35';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(player.x + 15, player.y + 20);
+            ctx.lineTo(player.x + 10, player.y + 30);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(player.x + 25, player.y + 20);
+            ctx.lineTo(player.x + 30, player.y + 30);
+            ctx.stroke();
+
+            // Unicycle wheel
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(player.x + 20, player.y + 50, 10, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Seat post
+            ctx.beginPath();
+            ctx.moveTo(player.x + 20, player.y + 40);
+            ctx.lineTo(player.x + 20, player.y + 27);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // Draw ground
+        function drawGround() {
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, ground.y, canvas.width, ground.height);
+
+            // Grass
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, ground.y, canvas.width, 5);
+        }
+
+        // Draw obstacle
+        function drawObstacle(obs) {
+            // Cactus/obstacle
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+
+            // Add spikes
+            ctx.fillStyle = '#1a6b1a';
+            for (let i = 0; i < 3; i++) {
+                ctx.beginPath();
+                ctx.moveTo(obs.x - 5, obs.y + 10 + i * 15);
+                ctx.lineTo(obs.x, obs.y + 15 + i * 15);
+                ctx.lineTo(obs.x - 5, obs.y + 20 + i * 15);
+                ctx.fill();
+            }
+        }
+
+        // Draw clouds
+        function drawClouds() {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.beginPath();
+            ctx.arc(200, 50, 20, 0, Math.PI * 2);
+            ctx.arc(220, 50, 25, 0, Math.PI * 2);
+            ctx.arc(240, 50, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(600, 80, 25, 0, Math.PI * 2);
+            ctx.arc(625, 80, 30, 0, Math.PI * 2);
+            ctx.arc(650, 80, 25, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Create obstacle
+        function createObstacle() {
+            const height = 30 + Math.random() * 30;
+            obstacles.push({
+                x: canvas.width,
+                y: ground.y - height,
+                width: 20,
+                height: height
+            });
+        }
+
+        // Update game
+        function update() {
+            if (!gameRunning || gameOver) return;
+
+            // Update score
+            score++;
+            scoreEl.textContent = Math.floor(score / 10);
+
+            // Increase difficulty
+            if (score % 500 === 0) {
+                gameSpeed += 0.5;
+                obstacleInterval = Math.max(50, obstacleInterval - 5);
+            }
+
+            // Player physics
+            player.velocityY += player.gravity;
+            player.y += player.velocityY;
+
+            // Ground collision
+            if (player.y >= ground.y - player.height) {
+                player.y = ground.y - player.height;
+                player.velocityY = 0;
+                player.isJumping = false;
+            }
+
+            // Create obstacles
+            obstacleTimer++;
+            if (obstacleTimer > obstacleInterval) {
+                createObstacle();
+                obstacleTimer = 0;
+            }
+
+            // Update obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                obstacles[i].x -= gameSpeed;
+
+                // Remove off-screen obstacles
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                    continue;
+                }
+
+                // Collision detection
+                if (player.x < obstacles[i].x + obstacles[i].width &&
+                    player.x + player.width > obstacles[i].x &&
+                    player.y < obstacles[i].y + obstacles[i].height &&
+                    player.y + player.height > obstacles[i].y) {
+                    endGame();
+                }
+            }
+        }
+
+        // Draw game
+        function draw() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw elements
+            drawClouds();
+            drawGround();
+            drawPlayer();
+
+            obstacles.forEach(obs => drawObstacle(obs));
+
+            // Game over screen
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 48px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 40);
+
+                ctx.font = '24px Arial';
+                ctx.fillText('Punkte: ' + Math.floor(score / 10), canvas.width / 2, canvas.height / 2);
+                ctx.fillText('Drücke LEERTASTE oder klicke zum Neustart', canvas.width / 2, canvas.height / 2 + 40);
+            } else if (!gameRunning) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 36px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Drücke LEERTASTE oder klicke', canvas.width / 2, canvas.height / 2 - 20);
+                ctx.fillText('zum Starten', canvas.width / 2, canvas.height / 2 + 20);
+            }
+        }
+
+        // Game loop
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Jump
+        function jump() {
+            if (!gameRunning && !gameOver) {
+                startGame();
+            } else if (gameOver) {
+                resetGame();
+            } else if (!player.isJumping) {
+                player.velocityY = player.jumpPower;
+                player.isJumping = true;
+            }
+        }
+
+        // Start game
+        function startGame() {
+            gameRunning = true;
+            gameOver = false;
+        }
+
+        // End game
+        function endGame() {
+            gameOver = true;
+            gameRunning = false;
+
+            const finalScore = Math.floor(score / 10);
+            if (finalScore > highScore) {
+                highScore = finalScore;
+                localStorage.setItem('unicycleHighScore', highScore);
+                highScoreEl.textContent = highScore;
+            }
+        }
+
+        // Reset game
+        function resetGame() {
+            gameOver = false;
+            gameRunning = true;
+            score = 0;
+            gameSpeed = 5;
+            obstacleInterval = 100;
+            obstacles = [];
+            obstacleTimer = 0;
+            player.y = 300;
+            player.velocityY = 0;
+            player.isJumping = false;
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                jump();
+            }
+        });
+
+        canvas.addEventListener('click', jump);
+
+        // Start game loop
+        gameLoop();
+    </script>
+</body>
+</html>
