@@ -49,8 +49,12 @@ async function checkAuth() {
         const response = await fetch('/check-auth');
         const data = await response.json();
 
-        if (!data.authenticated || (data.user.role !== 'admin' && data.user.role !== 'uploader')) {
+        console.log('Auth check:', data);
+        console.log('User role:', data.user?.role);
+
+        if (!data.authenticated || !data.user || (data.user.role !== 'admin' && data.user.role !== 'uploader')) {
             // Not authenticated or no admin/upload access
+            console.log('Access denied, redirecting to home');
             window.location.href = '/';
             return;
         }
@@ -172,12 +176,22 @@ function renderUsers() {
             <td>${user.lastLogin ? formatDate(user.lastLogin) : 'Noch nie'}</td>
             <td>
                 <div class="action-buttons">
-                    <button class="action-btn" onclick="editUser('${user.id}')">Bearbeiten</button>
-                    <button class="action-btn" onclick="resetPassword('${user.id}')">Passwort</button>
-                    <button class="action-btn danger" onclick="deleteUser('${user.id}', '${escapeHtml(user.username)}')">Löschen</button>
+                    <button class="action-btn edit-user-btn" data-user-id="${user.id}">Bearbeiten</button>
+                    <button class="action-btn reset-password-btn" data-user-id="${user.id}">Passwort</button>
+                    <button class="action-btn danger delete-user-btn" data-user-id="${user.id}" data-username="${escapeHtml(user.username)}">Löschen</button>
                 </div>
             </td>
         `;
+
+        // Add event listeners
+        const editBtn = row.querySelector('.edit-user-btn');
+        const resetBtn = row.querySelector('.reset-password-btn');
+        const deleteBtn = row.querySelector('.delete-user-btn');
+
+        editBtn.addEventListener('click', () => editUser(user.id));
+        resetBtn.addEventListener('click', () => resetPassword(user.id));
+        deleteBtn.addEventListener('click', () => deleteUser(user.id, user.username));
+
         usersTbody.appendChild(row);
     });
 }
@@ -518,8 +532,13 @@ function addToUploadQueue(file) {
             </div>
             <div class="upload-status">Warte...</div>
         </div>
-        <button class="remove-upload-btn" onclick="cancelUpload('${uploadId}')">×</button>
+        <button class="remove-upload-btn" data-upload-id="${uploadId}">×</button>
     `;
+
+    // Add cancel button event listener
+    const cancelBtn = item.querySelector('.remove-upload-btn');
+    cancelBtn.addEventListener('click', () => cancelUpload(uploadId));
+
     uploadItems.appendChild(item);
 
     // Generate thumbnail for images

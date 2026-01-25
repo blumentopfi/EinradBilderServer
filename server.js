@@ -504,6 +504,41 @@ app.delete('/api/admin/users/:userId', requireAdmin, (req, res) => {
   }
 });
 
+// ===== USER PROFILE ENDPOINTS =====
+
+// Change own password
+app.post('/api/profile/change-password', requireAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Aktuelles und neues Passwort erforderlich' });
+    }
+
+    // Verify current password
+    const user = getUserById(req.session.userId);
+    if (!user) {
+      return res.status(404).json({ error: 'Benutzer nicht gefunden' });
+    }
+
+    const isValid = verifyPassword(user.username, currentPassword);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Aktuelles Passwort ist falsch' });
+    }
+
+    // Change password
+    resetUserPassword(req.session.userId, newPassword, req.session.userId);
+
+    res.json({
+      success: true,
+      message: 'Passwort erfolgreich geändert'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // ===== FILE UPLOAD ENDPOINTS =====
 
 // Configure multer for file uploads

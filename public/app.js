@@ -23,6 +23,12 @@ const downloadBtn = document.getElementById('download-btn');
 const selectAllBtn = document.getElementById('select-all-btn');
 const deselectAllBtn = document.getElementById('deselect-all-btn');
 const logoutBtn = document.getElementById('logout-btn');
+const changePasswordBtn = document.getElementById('change-password-btn');
+const changePasswordModal = document.getElementById('change-password-modal');
+const changePasswordForm = document.getElementById('change-password-form');
+const closeChangePassword = document.getElementById('close-change-password');
+const cancelChangePassword = document.getElementById('cancel-change-password');
+const changePasswordError = document.getElementById('change-password-error');
 const previewModal = document.getElementById('preview-modal');
 const previewImage = document.getElementById('preview-image');
 const previewVideo = document.getElementById('preview-video');
@@ -64,10 +70,13 @@ function showGallery() {
 
     // Update user info display
     if (currentUser) {
+        console.log('Current user:', currentUser);
+        console.log('User role:', currentUser.role);
         userInfo.textContent = `Angemeldet als: ${currentUser.displayName}`;
 
         // Show admin button if user is admin or uploader
         if (currentUser.role === 'admin' || currentUser.role === 'uploader') {
+            console.log('Showing admin button for role:', currentUser.role);
             adminBtn.classList.remove('hidden');
             // Change button text for uploaders
             if (currentUser.role === 'uploader') {
@@ -76,6 +85,7 @@ function showGallery() {
                 adminBtn.textContent = 'Admin-Bereich';
             }
         } else {
+            console.log('Hiding admin button for role:', currentUser.role);
             adminBtn.classList.add('hidden');
         }
     }
@@ -121,6 +131,61 @@ loginForm.addEventListener('submit', async (e) => {
 // Admin button handling
 adminBtn.addEventListener('click', () => {
     window.location.href = '/admin.html';
+});
+
+// Change password handling
+changePasswordBtn.addEventListener('click', () => {
+    changePasswordModal.classList.remove('hidden');
+    changePasswordForm.reset();
+    changePasswordError.textContent = '';
+});
+
+closeChangePassword.addEventListener('click', () => {
+    changePasswordModal.classList.add('hidden');
+});
+
+cancelChangePassword.addEventListener('click', () => {
+    changePasswordModal.classList.add('hidden');
+});
+
+changePasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    changePasswordError.textContent = '';
+
+    const currentPassword = document.getElementById('current-password').value;
+    const newPassword = document.getElementById('new-password-input').value;
+    const confirmPassword = document.getElementById('confirm-new-password').value;
+
+    if (newPassword !== confirmPassword) {
+        changePasswordError.textContent = 'Neue Passwörter stimmen nicht überein';
+        return;
+    }
+
+    if (newPassword.length < 8) {
+        changePasswordError.textContent = 'Neues Passwort muss mindestens 8 Zeichen lang sein';
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/profile/change-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ currentPassword, newPassword })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            alert('Passwort erfolgreich geändert!');
+            changePasswordModal.classList.add('hidden');
+            changePasswordForm.reset();
+        } else {
+            changePasswordError.textContent = data.error || 'Fehler beim Ändern des Passworts';
+        }
+    } catch (error) {
+        console.error('Change password error:', error);
+        changePasswordError.textContent = 'Verbindungsfehler';
+    }
 });
 
 // Logout handling
