@@ -589,25 +589,64 @@ header h1 {
 
 /* Responsive */
 @media (max-width: 768px) {
-    header {
+    .header-top {
         flex-direction: column;
         align-items: flex-start;
-        padding: 20px;
+        padding: 15px;
+        gap: 15px;
     }
 
-    header h1 {
-        font-size: 24px;
+    .header-title {
+        width: 100%;
+    }
+
+    .header-title h1 {
+        font-size: 20px;
+    }
+
+    .header-logo {
+        width: 30px;
+        height: 30px;
     }
 
     .header-controls {
         width: 100%;
-        justify-content: flex-start;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+
+    .user-info {
+        width: 100%;
+        text-align: center;
+        font-size: 12px;
+        padding: 6px 10px;
+    }
+
+    .btn-nav,
+    .btn-secondary,
+    .btn-primary {
+        width: 100%;
+        padding: 10px 16px;
+        font-size: 14px;
+        justify-content: center;
+    }
+
+    .btn-nav {
+        border-bottom: none;
+        border-left: 3px solid transparent;
+    }
+
+    .btn-nav.active {
+        border-left-color: #ff6b35;
+        background: rgba(255, 107, 53, 0.1);
     }
 
     .gallery-toolbar {
         flex-direction: column;
         align-items: flex-start;
         padding: 15px;
+        gap: 10px;
     }
 
     .toolbar-left,
@@ -616,27 +655,142 @@ header h1 {
     }
 
     .toolbar-right {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .breadcrumb {
+        padding: 10px 15px;
+        font-size: 13px;
         flex-wrap: wrap;
     }
 
-    .gallery {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 20px;
-        padding: 20px;
+    .breadcrumb-item {
+        font-size: 13px;
     }
 
-    button {
-        padding: 10px 16px;
-        font-size: 14px;
+    .gallery {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 15px;
+        padding: 15px;
+    }
+
+    .media-card,
+    .folder-card {
+        min-height: 160px;
+    }
+
+    .media-card img,
+    .media-card video {
+        height: 120px;
+    }
+
+    .card-name {
+        font-size: 12px;
+        padding: 6px;
+    }
+
+    .checkbox {
+        width: 20px;
+        height: 20px;
+        top: 6px;
+        right: 6px;
     }
 
     .login-container {
-        padding: 40px 30px;
-        margin: 20px;
+        padding: 30px 20px;
+        margin: 15px;
     }
 
     #login-screen::before {
-        font-size: 120px;
+        font-size: 100px;
+    }
+
+    /* Admin page mobile */
+    .admin-tabs {
+        padding: 0 15px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-btn {
+        white-space: nowrap;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+
+    .admin-content {
+        padding: 15px;
+    }
+
+    .users-table-container {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .users-table {
+        font-size: 12px;
+    }
+
+    .users-table th,
+    .users-table td {
+        padding: 8px;
+    }
+
+    /* FAQ mobile */
+    .faq-content {
+        padding: 0 15px;
+    }
+
+    .faq-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .faq-toolbar h2 {
+        font-size: 1.4em;
+    }
+
+    .faq-item {
+        padding: 15px;
+    }
+
+    .faq-item-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .faq-actions {
+        margin-left: 0;
+        margin-top: 10px;
+    }
+
+    .faq-question {
+        font-size: 1em;
+    }
+
+    /* Modal improvements */
+    .modal-content {
+        width: 95%;
+        max-width: 95%;
+        margin: 10px;
+        padding: 20px;
+    }
+
+    #preview-image,
+    #preview-video {
+        max-height: 60vh;
+    }
+
+    .modal-nav {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .nav-btn {
+        width: 100%;
+        padding: 12px;
     }
 }
 
