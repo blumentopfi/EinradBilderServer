@@ -79,12 +79,6 @@ function showGallery() {
         if (currentUser.role === 'admin' || currentUser.role === 'uploader') {
             console.log('Showing admin button for role:', currentUser.role);
             adminBtn.classList.remove('hidden');
-            // Change button text for uploaders
-            if (currentUser.role === 'uploader') {
-                adminBtn.textContent = 'Upload-Bereich';
-            } else {
-                adminBtn.textContent = 'Admin-Bereich';
-            }
         } else {
             console.log('Hiding admin button for role:', currentUser.role);
             adminBtn.classList.add('hidden');
