@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vertraulicher Bericht - Die Glühenden Hallen</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d1810 100%);
+            padding: 40px 20px;
+            font-family: 'Crimson Text', serif;
+            min-height: 100vh;
+        }
+
+        .document-container {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .document {
+            background: linear-gradient(to bottom, #f5e6d3 0%, #e8d4b8 100%);
+            padding: 60px 80px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8),
+                        inset 0 0 100px rgba(139, 69, 19, 0.1);
+            border: 3px solid #8b4513;
+            position: relative;
+            transform: rotate(-0.5deg);
+        }
+
+        .document::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                repeating-linear-gradient(
+                    0deg,
+                    transparent,
+                    transparent 2px,
+                    rgba(139, 69, 19, 0.03) 2px,
+                    rgba(139, 69, 19, 0.03) 4px
+                );
+            pointer-events: none;
+        }
+
+        .document::after {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            border: 1px solid rgba(139, 69, 19, 0.3);
+            pointer-events: none;
+        }
+
+        .burn-damage {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(40, 20, 10, 0.6) 0%, transparent 70%);
+            border-radius: 50%;
+            filter: blur(3px);
+            opacity: 0.4;
+        }
+
+        .burn-damage::after {
+            content: '';
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            width: 90px;
+            height: 90px;
+            background: radial-gradient(circle, rgba(20, 10, 5, 0.5) 0%, transparent 60%);
+            border-radius: 50%;
+        }
+
+        .letterhead {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 3px double #8b4513;
+            padding-bottom: 25px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hall-symbol {
+            font-size: 48px;
+            color: #d4691d;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .institution-name {
+            font-family: 'Cinzel', serif;
+            font-size: 32px;
+            font-weight: 700;
+            color: #2c1810;
+            letter-spacing: 3px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .institution-subtitle {
+            font-family: 'Cinzel', serif;
+            font-size: 14px;
+            color: #5a3825;
+            letter-spacing: 2px;
+            font-weight: 400;
+        }
+
+        .seal-container {
+            position: absolute;
+            bottom: 60px;
+            right: 80px;
+            width: 120px;
+            height: 120px;
+            z-index: 3;
+        }
+
+        .seal {
+            width: 100%;
+            height: 100%;
+            border: 3px solid #8b4513;
+            border-radius: 50%;
+            background: radial-gradient(circle, #d4691d 0%, #8b4513 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            position: relative;
+        }
+
+        .seal-text {
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            color: #f5e6d3;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: 1px;
+            line-height: 1.3;
+        }
+
+        .seal-symbol {
+            position: absolute;
+            font-size: 40px;
+            color: rgba(245, 230, 211, 0.3);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .confidential-stamp {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-25deg);
+            font-family: 'Cinzel', serif;
+            font-size: 72px;
+            font-weight: 700;
+            color: rgba(180, 20, 20, 0.35);
+            letter-spacing: 8px;
+            border: 8px solid rgba(180, 20, 20, 0.35);
+            padding: 20px 60px;
+            text-transform: uppercase;
+            z-index: 4;
+            pointer-events: none;
+        }
+
+        .classification {
+            text-align: center;
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            font-weight: 700;
+            color: #b41414;
+            margin-bottom: 30px;
+            letter-spacing: 4px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .metadata {
+            margin-bottom: 35px;
+            font-size: 15px;
+            line-height: 1.8;
+            color: #3a2418;
+            position: relative;
+            z-index: 2;
+        }
+
+        .metadata-row {
+            margin-bottom: 8px;
+        }
+
+        .metadata-label {
+            font-weight: 600;
+            display: inline-block;
+            width: 160px;
+        }
+
+        .subject {
+            font-size: 22px;
+            font-weight: 700;
+            text-align: center;
+            margin: 35px 0;
+            color: #2c1810;
+            text-decoration: underline;
+            text-decoration-color: #8b4513;
+            position: relative;
+            z-index: 2;
+        }
+
+        .content {
+            font-size: 16px;
+            line-height: 1.9;
+            color: #2c1810;
+            text-align: justify;
+            position: relative;
+            z-index: 2;
+        }
+
+        .content p {
+            margin-bottom: 20px;
+        }
+
+        .section-heading {
+            font-weight: 700;
+            font-size: 18px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #5a3825;
+            text-decoration: underline;
+            text-decoration-color: #8b4513;
+        }
+
+        .transformation-stages {
+            margin: 25px 0;
+            padding-left: 30px;
+        }
+
+        .stage {
+            margin-bottom: 18px;
+            line-height: 1.8;
+        }
+
+        .stage-label {
+            font-weight: 700;
+            color: #8b4513;
+        }
+
+        .warning-box {
+            border: 2px solid #b41414;
+            background: rgba(180, 20, 20, 0.08);
+            padding: 20px;
+            margin: 30px 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        .warning-heading {
+            font-family: 'Cinzel', serif;
+            font-size: 16px;
+            font-weight: 700;
+            color: #b41414;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .signature-section {
+            margin-top: 60px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .signature-line {
+            border-top: 2px solid #2c1810;
+            width: 300px;
+            margin-top: 50px;
+            padding-top: 10px;
+        }
+
+        .signature-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .signature-title {
+            font-size: 14px;
+            font-style: italic;
+            color: #5a3825;
+        }
+
+        .footer-note {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #5a3825;
+            font-style: italic;
+            text-align: center;
+            border-top: 1px solid #8b4513;
+            padding-top: 15px;
+            position: relative;
+            z-index: 2;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .document {
+                box-shadow: none;
+                transform: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="document-container">
+        <div class="document">
+            <div class="burn-damage"></div>
+
+            <div class="letterhead">
+                <div class="hall-symbol">🔥</div>
+                <div class="institution-name">Die Glühenden Hallen</div>
+                <div class="institution-subtitle">Forschungsrat der Sieben Säle • Eisenhafen</div>
+            </div>
+
+            <div class="classification">
+                ⚠ VERTRAULICH • CONFIDENTIAL ⚠
+            </div>
+
+            <div class="confidential-stamp">
+                VERTRAULICH
+            </div>
+
+            <div class="metadata">
+                <div class="metadata-row">
+                    <span class="metadata-label">Aktenzeichen:</span> GH-VB-1492-01-T.A.
+                </div>
+                <div class="metadata-row">
+                    <span class="metadata-label">Datum:</span> 12. Hammer, 1492 DR
+                </div>
+                <div class="metadata-row">
+                    <span class="metadata-label">Verfasser:</span> Thalgrimm Runenstein, Oberster Archivar
+                </div>
+                <div class="metadata-row">
+                    <span class="metadata-label">Verteiler:</span> Nur Hallenführer (Vertraulichkeitsstufe VII)
+                </div>
+                <div class="metadata-row">
+                    <span class="metadata-label">Betreff:</span> Zwischenfall - Forscher T. Aschenfuß
+                </div>
+            </div>
+
+            <div class="subject">
+                Interner Bericht: Gesundheitliche Komplikationen<br>
+                bei Forschungsarbeiten am Monolithen
+            </div>
+
+            <div class="content">
+                <p>
+                    An die ehrenwerten Hallenführer der Sieben Säle,
+                </p>
+
+                <p>
+                    es ist meine Pflicht, Sie über einen <strong>bedauerlichen Zwischenfall</strong> zu informieren, der sich am 10. Tag des Erntemonds in Saal IV ereignet hat. Der Forscher <strong>Torvin Aschenfuß</strong>, Magier zweiten Ranges, erlitt während routinemäßiger Messungen am Monolithen eine <em>unerwartete physiologische Reaktion</em>.
+                </p>
+
+                <p>
+                    Herr Aschenfuß wurde, wie bereits in vorherigen Berichten dokumentiert, mit der Aufzeichnung von Temperaturfluktuationen und thaumaturgischen Emissionen in unmittelbarer Nähe des Artefakts betraut. Gegen 14:00 Uhr bemerkte er ein <em>"unangenehmes Kribbeln in den Fingerspitzen"</em> sowie eine <em>"erhöhte Körpertemperatur"</em>. Diese Symptome wurden zunächst als gewöhnliche Ermüdungserscheinungen interpretiert.
+                </p>
+
+                <div class="section-heading">Beobachtete Symptomatik</div>
+
+                <p>
+                    Die folgende Dokumentation dient ausschließlich wissenschaftlichen Zwecken und ist <strong>nicht für die Öffentlichkeit bestimmt</strong>:
+                </p>
+
+                <div class="transformation-stages">
+                    <div class="stage">
+                        <span class="stage-label">Stufe I (0-6 Stunden nach Exposition):</span>
+                        Erhöhte Körpertemperatur (39-41°C), gerötete Haut mit goldenem Schimmer, gesteigerte Nervosität und Reizbarkeit. Der Betroffene berichtet von "innerem Brennen" und gesteigertem Energiegefühl. Symptome können noch als fieberhafte Erkrankung verschleiert werden.
+                    </div>
+
+                    <div class="stage">
+                        <span class="stage-label">Stufe II (6-24 Stunden nach Exposition):</span>
+                        Hauttemperatur steigt auf 45-50°C. Deutlich sichtbares Glühen unter der Haut, besonders an Händen und Augen. Aggressive Verhaltensänderungen. Kleidung beginnt zu verkohlen. Verbale Kommunikation wird schwieriger. <em>Zu diesem Zeitpunkt ist die öffentliche Isolation zwingend erforderlich</em>.
+                    </div>
+
+                    <div class="stage">
+                        <span class="stage-label">Stufe III (24-72 Stunden nach Exposition):</span>
+                        Vollständige Transformation in eine elementare Lebensform. Menschliche Gestalt löst sich in lodernde Flammen auf. Kognitive Funktionen stark beeinträchtigt oder vollständig verloren. Das Subjekt ist in diesem Stadium <em>hochgefährlich</em> und <strong>nicht mehr als Person zu betrachten</strong>.
+                    </div>
+                </div>
+
+                <p>
+                    Herr Aschenfuß befindet sich derzeit in Stufe II und wurde <strong>umgehend als erkrankt nach Hause geschickt</strong>, um weitere Aufmerksamkeit zu vermeiden. Seine Familie wurde über eine <em>"schwere fieberhafte Infektion"</em> informiert und angewiesen, ihn in Isolation zu halten. Unsere Heiler besuchen ihn regelmäßig unter dem Vorwand medizinischer Versorgung.
+                </p>
+
+                <div class="section-heading">Weitere Vorfälle unter Beobachtung</div>
+
+                <p>
+                    Es muss mit Bedauern festgestellt werden, dass Herr Aschenfuß <strong>nicht der einzige Fall</strong> ist. Seit dem vergangenen Mond wurden <em>vier weitere Forscher</em> mit ähnlichen Symptomen identifiziert:
+                </p>
+
+                <p style="padding-left: 30px;">
+                    • Forscher <strong>Mira Kohlenblick</strong> (Stufe I, als "krank" beurlaubt)<br>
+                    • Assistent <strong>Gregor Aschenkorn</strong> (Stufe I, zu "Familienangelegenheiten" entsendet)<br>
+                    • Schreiber <strong>Fenris Rauchblatt</strong> (Stufe II, als vermisst gemeldet - siehe Sonderanhang)<br>
+                    • Leibwächter <strong>Kael Sturmflamme</strong> (Stufe II, derzeit in Sonderisolation in Saal VII)
+                </p>
+
+                <p>
+                    Die Häufung dieser Fälle ist <em>besorgniserregend</em>, doch es liegt im Interesse aller Beteiligten, <strong>keine voreiligen Schlüsse zu ziehen</strong>, die das Ansehen der Glühenden Hallen oder die öffentliche Ordnung gefährden könnten.
+                </p>
+
+                <div class="warning-box">
+                    <div class="warning-heading">Anweisung zur Geheimhaltung</div>
+                    <p style="margin-bottom: 0;">
+                        Diese Information ist <strong>streng vertraulich</strong>. Jegliche Verbreitung dieser Erkenntnisse außerhalb des Führungszirkels ist <strong>strengstens untersagt</strong>. Die Bevölkerung Eisenhafens darf <em>unter keinen Umständen</em> von der wahren Natur dieser "Erkrankungen" erfahren. Öffentliche Anfragen sind mit den üblichen Erklärungen (Fieber, Erschöpfung, Familienangelegenheiten) zu beantworten.
+                    </p>
+                </div>
+
+                <div class="section-heading">Empfohlene Maßnahmen</div>
+
+                <p>
+                    Um weitere Zwischenfälle zu minimieren, empfehle ich folgende Schritte:
+                </p>
+
+                <p style="padding-left: 30px;">
+                    1. <strong>Reduzierung der Forschungsaktivitäten</strong> in direkter Nähe zum Monolithen<br>
+                    2. <strong>Erhöhte Überwachung</strong> aller Forscher auf frühe Symptome<br>
+                    3. <strong>Vorbereitung von Isolationsräumen</strong> in Saal VII für Stufe-II-Fälle<br>
+                    4. <strong>Entwicklung plausibler Erklärungen</strong> für zunehmende "Krankheitsfälle"<br>
+                    5. <strong>Verstärkte Sicherheitsmaßnahmen</strong> zur Eindämmung von Stufe-III-Transformationen
+                </p>
+
+                <p>
+                    Ich betone ausdrücklich: Diese Maßnahmen dienen dem <em>Schutz unserer Forschung</em> und der <em>Wahrung des öffentlichen Friedens</em>. Die Arbeit der Glühenden Hallen ist von unschätzbarem Wert für Eisenhafen, und wir dürfen nicht zulassen, dass unwissende Bürger oder überambitionierte Abenteurer unsere wissenschaftlichen Bemühungen durch <em>Panikmache und Einmischung</em> gefährden.
+                </p>
+
+                <p>
+                    Der Monolith ist und bleibt ein <strong>archäologisches Artefakt von höchstem wissenschaftlichen Interesse</strong>. Die gegenwärtigen Komplikationen sind bedauerlich, aber <em>beherrschbar</em>. Mit der gebotenen Vorsicht und Diskretion werden wir diese Phase überstehen.
+                </p>
+
+                <div class="signature-section">
+                    <p>
+                        In Treue zu den Sieben Sälen,
+                    </p>
+
+                    <div class="signature-line">
+                        <div class="signature-name">Thalgrimm Runenstein</div>
+                        <div class="signature-title">Oberster Archivar der Glühenden Hallen</div>
+                        <div class="signature-title">Hüter der Siegel, Stufe VII</div>
+                    </div>
+                </div>
+
+                <div class="footer-note">
+                    Dieses Dokument unterliegt der höchsten Vertraulichkeitsstufe.<br>
+                    Unbefugte Verbreitung wird mit sofortiger Entlassung und rechtlichen Konsequenzen geahndet.<br>
+                    <strong>Nach Kenntnisnahme zu versiegeln und im verschlossenen Archiv zu verwahren.</strong>
+                </div>
+            </div>
+
+            <div class="seal-container">
+                <div class="seal">
+                    <div class="seal-symbol">🔥</div>
+                    <div class="seal-text">
+                        SIEGEL<br>
+                        DER<br>
+                        SIEBEN<br>
+                        SÄLE
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stadtwache Eisenhafen - Einbruchsbericht</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Times New Roman', serif;
+            background: linear-gradient(135deg, #8b7355 0%, #d4a574 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .document-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #f4e8d8;
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px),
+                repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(0,0,0,.02) 2px, rgba(0,0,0,.02) 4px);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(0,0,0,0.1);
+            border: 2px solid #8b6f47;
+            position: relative;
+        }
+
+        .document-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(ellipse at center, transparent 0%, rgba(139,111,71,0.05) 100%);
+            pointer-events: none;
+        }
+
+        .document {
+            padding: 60px;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 4px double #2c1810;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .seal {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 15px;
+            border: 3px solid #2c1810;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #d4af37 0%, #f4e4a6 50%, #d4af37 100%);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .seal::before {
+            content: '⚔';
+            font-size: 40px;
+            color: #2c1810;
+        }
+
+        .seal::after {
+            content: '';
+            position: absolute;
+            width: 90%;
+            height: 90%;
+            border: 2px solid #2c1810;
+            border-radius: 50%;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c1810;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: #5d4e37;
+            font-style: italic;
+            margin-top: 5px;
+        }
+
+        .document-number {
+            text-align: right;
+            font-size: 11px;
+            color: #5d4e37;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #2c1810;
+            border-bottom: 2px solid #5d4e37;
+            padding-bottom: 5px;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+
+        .field-group {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .field-label {
+            font-weight: bold;
+            color: #2c1810;
+            font-size: 13px;
+        }
+
+        .field-value {
+            color: #1a1a1a;
+            font-size: 13px;
+            border-bottom: 1px dotted #999;
+            padding-bottom: 2px;
+        }
+
+        .priority-low {
+            color: #5d8a3a;
+            font-weight: bold;
+        }
+
+        .priority-high {
+            color: #8b0000;
+            font-weight: bold;
+        }
+
+        .stolen-items {
+            background: rgba(139, 111, 71, 0.08);
+            padding: 15px;
+            border-left: 4px solid #8b6f47;
+            margin: 15px 0;
+        }
+
+        .stolen-items ul {
+            list-style: none;
+            padding-left: 20px;
+        }
+
+        .stolen-items li {
+            padding: 5px 0;
+            position: relative;
+            font-size: 13px;
+            color: #1a1a1a;
+        }
+
+        .stolen-items li::before {
+            content: '▪';
+            position: absolute;
+            left: -15px;
+            color: #5d4e37;
+        }
+
+        .note-box {
+            background: #fff9e6;
+            border: 2px solid #d4af37;
+            padding: 15px;
+            margin: 15px 0;
+            box-shadow: inset 0 0 10px rgba(212, 175, 55, 0.2);
+        }
+
+        .note-title {
+            font-weight: bold;
+            color: #8b0000;
+            text-transform: uppercase;
+            font-size: 12px;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .witness-statement {
+            background: rgba(255, 255, 255, 0.5);
+            padding: 15px;
+            border-left: 4px solid #5d4e37;
+            font-style: italic;
+            margin: 15px 0;
+            font-size: 13px;
+            line-height: 1.7;
+            color: #2c2c2c;
+        }
+
+        .witness-statement::before {
+            content: '"';
+            font-size: 40px;
+            color: #8b6f47;
+            opacity: 0.3;
+            float: left;
+            line-height: 0.8;
+            margin-right: 5px;
+        }
+
+        .signature-section {
+            margin-top: 50px;
+            border-top: 2px solid #5d4e37;
+            padding-top: 30px;
+        }
+
+        .signature-line {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            gap: 40px;
+        }
+
+        .signature-box {
+            flex: 1;
+        }
+
+        .signature-box label {
+            font-size: 11px;
+            color: #5d4e37;
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .signature {
+            border-top: 2px solid #2c1810;
+            padding-top: 10px;
+            font-family: 'Brush Script MT', cursive;
+            font-size: 20px;
+            color: #1a1a1a;
+            text-align: center;
+        }
+
+        .date-stamp {
+            text-align: right;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #5d4e37;
+        }
+
+        .stamp {
+            position: absolute;
+            bottom: 100px;
+            right: 80px;
+            width: 120px;
+            height: 120px;
+            border: 3px solid rgba(139, 0, 0, 0.4);
+            border-radius: 50%;
+            transform: rotate(-15deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: rgba(139, 0, 0, 0.4);
+            font-size: 14px;
+            text-align: center;
+            line-height: 1.2;
+            text-transform: uppercase;
+            padding: 20px;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #8b6f47;
+            text-align: center;
+            font-size: 10px;
+            color: #5d4e37;
+            font-style: italic;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .document-container {
+                box-shadow: none;
+                border: none;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="document-container">
+        <div class="document">
+            <div class="header">
+                <div class="seal"></div>
+                <h1>Stadtwache Eisenhafen</h1>
+                <div class="subtitle">Amt für öffentliche Sicherheit und Ordnung</div>
+            </div>
+
+            <div class="document-number">
+                Aktenzeichen: SW-EH-1492-H-0247<br>
+                Vorgangstyp: Einbruchsdiebstahl
+            </div>
+
+            <div class="section">
+                <div class="section-title">I. Grunddaten des Vorfalls</div>
+
+                <div class="field-group">
+                    <div class="field-label">Datum des Vorfalls:</div>
+                    <div class="field-value">13. Hammer, 1492 DR (zwischen 23:00 und 01:00 Uhr)</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Tatort:</div>
+                    <div class="field-value">The Charming Dungeon General Store, Handwerkerviertel</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Geschädigter:</div>
+                    <div class="field-value">Borin "Bori" Kupferbart (männlich, Zwerg, 67 Jahre, Ladenbesitzer)</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Berichterstatter:</div>
+                    <div class="field-value">Nachtwächter Grunir Eisenfuß, 3. Stadtwache-Kompanie</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Prioritätsstufe:</div>
+                    <div class="field-value"><span class="priority-low">NIEDRIG</span> (aufgrund laufender Ermittlungen im Mordfall Grendel)</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Status:</div>
+                    <div class="field-value">In Bearbeitung - Zeugenaussagen aufgenommen - Keine unmittelbare Verfolgung</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">II. Sachverhaltsschilderung</div>
+
+                <p style="line-height: 1.7; font-size: 13px; color: #1a1a1a; margin-bottom: 15px;">
+                    In der Nacht vom 13. auf den 14. Hammer 1492 DR wurde in das Geschäft "The Charming Dungeon General Store"
+                    eingebrochen. Der Einbruchspunkt wurde als Kellerfenster an der rückwärtigen Gebäudeseite identifiziert.
+                    Das Fenster wurde aufgebrochen, wobei der Rahmen beschädigt wurde. Die Größe des Fensters deutet darauf hin,
+                    dass der Täter von schmächtiger Statur gewesen sein muss.
+                </p>
+
+                <p style="line-height: 1.7; font-size: 13px; color: #1a1a1a;">
+                    Der unterzeichnende Beamte wurde gegen Mitternacht auf eine verdächtige Person aufmerksam, die fluchtartig
+                    das Hafenviertel ansteuerte. Eine Verfolgung wurde eingeleitet, jedoch konnte die Person in den Gassen entkommen.
+                </p>
+            </div>
+
+            <div class="section">
+                <div class="section-title">III. Gestohlene Gegenstände</div>
+
+                <div class="stolen-items">
+                    <ul>
+                        <li>20 Wasserflaschen (Gesamtwert: ca. 4 GP)</li>
+                        <li>15 Fuß Eisenkette (Gesamtwert: ca. 2,5 GP)</li>
+                        <li>30 Fuß Hanfseil (Gesamtwert: ca. 1,5 GP)</li>
+                        <li>10 Stück Kohle (Gesamtwert: ca. 0,5 GP)</li>
+                        <li>Diverse Eisenwerkzeuge (Hämmer, Nägel, Krampen - Gesamtwert: ca. 3 GP)</li>
+                    </ul>
+                    <div style="margin-top: 15px; padding-top: 10px; border-top: 1px solid #8b6f47; font-weight: bold; font-size: 13px;">
+                        Geschätzter Gesamtschaden: 11,5 Goldstücke
+                    </div>
+                </div>
+
+                <div class="note-box">
+                    <div class="note-title">Ungewöhnliche Beobachtung</div>
+                    <p style="font-size: 13px; line-height: 1.6; color: #1a1a1a;">
+                        Die Registrierkasse des Geschäfts befand sich in unverschlossenem Zustand und enthielt 50 Goldstücke.
+                        Diese Summe wurde vom Täter NICHT entwendet. Diese Tatsache ist als <strong>sehr ungewöhnlich</strong>
+                        zu bewerten und weicht vom üblichen Muster gewöhnlicher Einbruchsdelikte erheblich ab. Die Auswahl der
+                        gestohlenen Gegenstände deutet auf einen spezifischen Bedarf hin, nicht auf gewöhnliche kriminelle Bereicherung.
+                    </p>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">IV. Zeugenaussage des diensthabenden Wachbeamten</div>
+
+                <div class="witness-statement">
+                    Ich, Nachtwächter Grunir Eisenfuß, war in besagter Nacht auf Routinepatrouille im Handwerkerviertel.
+                    Gegen Mitternacht bemerkte ich eine Person, die aus Richtung des General Store kam und in hastiger
+                    Weise Richtung Hafenviertel flüchtete. Die Person war von kleiner Statur, schmächtig gebaut,
+                    und trug einen Sack über der Schulter, welcher offenbar metallische Gegenstände enthielt,
+                    da ein deutliches Klirren zu vernehmen war. Bei der Verfolgung konnte ich beobachten, dass die
+                    Person leicht hinkte oder erschöpft wirkte. Das Verhalten war panisch und deutete nicht auf
+                    einen professionellen Dieb hin. Die Verfolgung musste aufgrund der verworrenen Gassen im Hafenviertel
+                    abgebrochen werden.
+                </div>
+
+                <div style="text-align: right; font-style: italic; font-size: 12px; color: #5d4e37; margin-top: 5px;">
+                    — Aussage protokolliert am 14. Hammer 1492 DR, 02:30 Uhr
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">V. Täterbeschreibung</div>
+
+                <div class="field-group">
+                    <div class="field-label">Statur:</div>
+                    <div class="field-value">Klein, schmächtig (für einen Zwerg untypisch schlank)</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Geschlecht:</div>
+                    <div class="field-value">Vermutlich männlich</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Alter:</div>
+                    <div class="field-value">Geschätzt jugendlich oder sehr jung (unter 25 Jahre)</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Fluchtrichtung:</div>
+                    <div class="field-value">Hafenviertel, vermutlich Unterschlupf in verlassenen Lagerhäusern</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Besondere Merkmale:</div>
+                    <div class="field-value">Hinkendes Gangbild, panisches Verhalten, kein professionelles Vorgehen</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">VI. Beweismittel</div>
+
+                <div class="field-group">
+                    <div class="field-label">Fundstück:</div>
+                    <div class="field-value">Verkohlter Stoffetzen am Kellerfenster (Initialen "T.A." erkennbar)</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Spurenlage:</div>
+                    <div class="field-value">Fußspuren in Richtung Hafenviertel, teilweise durch Niederschlag verwischt</div>
+                </div>
+
+                <div class="field-group">
+                    <div class="field-label">Sonstiges:</div>
+                    <div class="field-value">Leichte Schmelzspuren am Metallgriff des Fensters (ungewöhnlich)</div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-title">VII. Weitere Ermittlungsschritte</div>
+
+                <p style="line-height: 1.7; font-size: 13px; color: #1a1a1a;">
+                    Aufgrund der niedrigen Prioritätsstufe und der aktuellen Auslastung der Stadtwache durch
+                    den Mordfall Grendel werden keine umfangreichen Ermittlungsressourcen für diesen Fall bereitgestellt.
+                    Der Geschädigte wurde über die Möglichkeit informiert, private Ermittler (Abenteurergilde)
+                    zu konsultieren. Die Akte bleibt geöffnet für eventuelle neue Erkenntnisse.
+                </p>
+            </div>
+
+            <div class="signature-section">
+                <div class="field-group">
+                    <div class="field-label">Bericht erstellt am:</div>
+                    <div class="field-value">14. Hammer 1492 DR, 07:15 Uhr</div>
+                </div>
+
+                <div class="signature-line">
+                    <div class="signature-box">
+                        <label>Berichterstattender Beamter:</label>
+                        <div class="signature">Grunir Eisenfuß</div>
+                        <div style="text-align: center; font-size: 11px; color: #5d4e37; margin-top: 5px;">
+                            Nachtwächter, 3. Kompanie
+                        </div>
+                    </div>
+
+                    <div class="signature-box">
+                        <label>Genehmigt durch:</label>
+                        <div class="signature">Thrain Sturmschwur</div>
+                        <div style="text-align: center; font-size: 11px; color: #5d4e37; margin-top: 5px;">
+                            Hauptmann der Stadtwache
+                        </div>
+                    </div>
+                </div>
+
+                <div class="date-stamp">
+                    Dieses Dokument wurde am 14. Hammer 1492 DR offiziell registriert und archiviert.
+                </div>
+            </div>
+
+            <div class="stamp">
+                In<br>Bearbeitung
+            </div>
+
+            <div class="footer">
+                Stadtwache Eisenhafen • Hauptwache am Marktplatz • Im Dienste des Gemeinwohls seit 1401 DR<br>
+                Dieses Dokument ist amtlich und vertraulich zu behandeln.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

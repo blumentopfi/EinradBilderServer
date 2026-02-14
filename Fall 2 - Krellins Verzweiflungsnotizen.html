@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Krellins Verzweiflungsnotizen - Fall 2</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #2c1810 0%, #1a0f0a 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+            font-family: 'Kalam', cursive;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(255,100,0,0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(200,50,0,0.03) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .title-burnt {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .title-burnt h1 {
+            font-family: 'Caveat', cursive;
+            font-size: 3.5em;
+            color: #3a2010;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            transform: rotate(-2deg);
+            letter-spacing: 2px;
+        }
+
+        .title-burnt .subtitle {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.2em;
+            color: #5a3520;
+            margin-top: 10px;
+            font-style: italic;
+        }
+
+        /* Paper notes with different styles */
+        .note {
+            background: #f4e8d0;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
+            position: relative;
+            border: 1px solid #d4c4a0;
+        }
+
+        .note::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                repeating-linear-gradient(
+                    transparent,
+                    transparent 29px,
+                    rgba(150,100,50,0.1) 29px,
+                    rgba(150,100,50,0.1) 30px
+                );
+            pointer-events: none;
+        }
+
+        .note-torn {
+            background: #efe5ca;
+            clip-path: polygon(
+                0% 3%, 2% 0%, 4% 2%, 6% 0%, 8% 1%, 10% 0%, 12% 2%, 14% 0%,
+                16% 1%, 18% 0%, 20% 2%, 22% 1%, 24% 0%, 26% 2%, 28% 0%, 30% 1%,
+                32% 0%, 34% 2%, 36% 1%, 38% 0%, 40% 2%, 42% 0%, 44% 1%, 46% 0%,
+                48% 2%, 50% 0%, 52% 1%, 54% 0%, 56% 2%, 58% 1%, 60% 0%, 62% 2%,
+                64% 0%, 66% 1%, 68% 0%, 70% 2%, 72% 0%, 74% 1%, 76% 0%, 78% 2%,
+                80% 1%, 82% 0%, 84% 2%, 86% 0%, 88% 1%, 90% 0%, 92% 2%, 94% 1%,
+                96% 0%, 98% 2%, 100% 1%,
+                100% 100%, 0% 100%
+            );
+        }
+
+        .note-crumpled {
+            background: #e8dcc0;
+            transform: rotate(-1deg);
+        }
+
+        .note-stained {
+            position: relative;
+        }
+
+        .note-stained::after {
+            content: '';
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(100,70,40,0.15) 0%, transparent 70%);
+            top: 20%;
+            right: 10%;
+            pointer-events: none;
+        }
+
+        .water-stain {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 60% 40% 50% 50%;
+            background: radial-gradient(ellipse, rgba(120,140,160,0.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .tear-stain {
+            position: absolute;
+            width: 15px;
+            height: 20px;
+            border-radius: 50% 50% 50% 50%;
+            background: radial-gradient(ellipse, rgba(100,120,140,0.18) 0%, transparent 80%);
+            pointer-events: none;
+        }
+
+        .scorch-mark {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(80,40,20,0.25) 0%, rgba(120,70,40,0.1) 50%, transparent 70%);
+            pointer-events: none;
+        }
+
+        /* Handwriting styles */
+        .handwriting-normal {
+            font-family: 'Kalam', cursive;
+            font-size: 1.1em;
+            color: #2c1810;
+            line-height: 1.8;
+        }
+
+        .handwriting-shaky {
+            font-family: 'Caveat', cursive;
+            font-size: 1.2em;
+            color: #3a2010;
+            line-height: 1.9;
+            letter-spacing: 1px;
+            transform: rotate(0.5deg);
+        }
+
+        .handwriting-desperate {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 1.3em;
+            color: #1a0f0a;
+            line-height: 1.7;
+            font-weight: bold;
+        }
+
+        /* Text effects */
+        .crossed-out {
+            text-decoration: line-through;
+            text-decoration-color: #8a4520;
+            text-decoration-thickness: 2px;
+            opacity: 0.7;
+        }
+
+        .underlined {
+            border-bottom: 2px solid #6a3510;
+            display: inline-block;
+            padding-bottom: 2px;
+        }
+
+        .circled {
+            border: 2px solid #8a4520;
+            border-radius: 10px;
+            padding: 5px 10px;
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .emphasized {
+            font-weight: bold;
+            color: #5a2010;
+            font-size: 1.2em;
+        }
+
+        .barely-legible {
+            opacity: 0.5;
+            font-size: 0.9em;
+            letter-spacing: 2px;
+        }
+
+        .urgent {
+            color: #8a2010;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        /* Lists */
+        .desperate-list {
+            margin: 20px 0;
+            padding-left: 20px;
+        }
+
+        .desperate-list li {
+            margin: 12px 0;
+            list-style: none;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .desperate-list li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: #6a3510;
+            font-weight: bold;
+        }
+
+        /* Sketches */
+        .sketch-box {
+            border: 2px dashed #8a5530;
+            padding: 20px;
+            margin: 20px 0;
+            background: rgba(255,250,240,0.5);
+            position: relative;
+        }
+
+        .sketch-box::before {
+            content: '(Skizze)';
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-size: 0.8em;
+            color: #6a4520;
+            font-style: italic;
+        }
+
+        /* Date stamps */
+        .date-stamp {
+            font-family: 'Patrick Hand', cursive;
+            font-size: 0.95em;
+            color: #6a4520;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        /* Emotional breaks */
+        .breakdown {
+            text-align: center;
+            font-size: 1.4em;
+            margin: 25px 0;
+            color: #5a2010;
+            font-weight: bold;
+            line-height: 1.6;
+            letter-spacing: 2px;
+        }
+
+        /* Blood/ink smudge */
+        .smudge {
+            display: inline-block;
+            padding: 0 8px;
+            background: linear-gradient(90deg, transparent, rgba(80,40,20,0.15), transparent);
+            border-radius: 3px;
+        }
+
+        /* Arrows and doodles */
+        .arrow-right::after {
+            content: ' →';
+            color: #8a4520;
+            font-weight: bold;
+        }
+
+        .double-underline {
+            border-bottom: 3px double #6a3510;
+            display: inline-block;
+            padding-bottom: 3px;
+        }
+
+        /* Margin notes */
+        .margin-note {
+            position: absolute;
+            right: -100px;
+            font-size: 0.85em;
+            color: #7a4520;
+            transform: rotate(5deg);
+            font-style: italic;
+            width: 90px;
+        }
+
+        @media (max-width: 768px) {
+            .margin-note {
+                position: static;
+                transform: none;
+                width: auto;
+                margin-top: 10px;
+                margin-left: 20px;
+            }
+        }
+
+        /* Day counter */
+        .day-counter {
+            background: #3a2010;
+            color: #f4e8d0;
+            padding: 5px 15px;
+            display: inline-block;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .separator {
+            text-align: center;
+            margin: 40px 0;
+            color: #6a4520;
+            font-size: 2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="title-burnt">
+            <h1>Krellins Notizen</h1>
+            <div class="subtitle">"Ich muss ihn retten. Ich MUSS."</div>
+        </div>
+
+        <!-- First note - Early hope -->
+        <div class="note note-torn">
+            <div class="water-stain" style="top: 10%; left: 15%;"></div>
+            <div class="date-stamp">Tag 1 - Heute Abend</div>
+            <div class="handwriting-normal">
+                <p><span class="underlined">Torvald ist nach Hause gekommen</span>. Etwas stimmt nicht.</p>
+                <p>Seine Augen... sie glühen. ROT. Als ob Feuer dahinter brennt.</p>
+                <p>Seine Haut ist heiß. Ich habe seine Stirn berührt - meine Hand verbrannte fast.</p>
+                <p>Er spricht wirr. Redet von einem <span class="emphasized">Monolithen</span>. Von <span class="emphasized">Feuer</span>. Von <span class="emphasized">Rufen</span>.</p>
+                <br>
+                <p>Ich bringe ihn zu einem Heiler. Das ist nur eine Krankheit. Fieber. Das muss es sein.</p>
+                <p class="barely-legible">Er ist alles, was ich noch habe...</p>
+            </div>
+        </div>
+
+        <!-- Second note - Failed remedies -->
+        <div class="note note-crumpled note-stained">
+            <div class="scorch-mark" style="top: 15%; right: 10%;"></div>
+            <div class="tear-stain" style="bottom: 20%; left: 25%;"></div>
+            <div class="tear-stain" style="bottom: 25%; left: 28%;"></div>
+            <div class="day-counter">Tag 3</div>
+            <div class="handwriting-shaky">
+                <p class="emphasized">Dinge die ich versucht habe:</p>
+                <ul class="desperate-list">
+                    <li><span class="crossed-out">Fiebersenk-Trank von Brunna</span> → Funktioniert nicht</li>
+                    <li><span class="crossed-out">Kühlsalbe, dreimal täglich</span> → Verbrennt sofort weg</li>
+                    <li><span class="crossed-out">Eiswurzel-Extrakt</span> → Verdampft beim Kontakt</li>
+                    <li><span class="crossed-out">Kaltes Bad</span> → Wasser kocht innerhalb von Sekunden</li>
+                    <li><span class="crossed-out">Gebete an Moradin</span> → Keine Antwort</li>
+                    <li><span class="crossed-out">Seifenwasser-Umschläge</span> → <span class="smudge">Nichts</span></li>
+                </ul>
+                <br>
+                <p class="breakdown">WARUM FUNKTIONIERT NICHTS?!</p>
+                <br>
+                <p>Torvalds Haut bekommt Risse. Durch die Risse scheint <span class="emphasized">LICHT</span>. Rotes, glühendes Licht.</p>
+                <p>Als ob er von innen brennt.</p>
+            </div>
+        </div>
+
+        <!-- Third note - Desperate observations -->
+        <div class="note">
+            <div class="scorch-mark" style="top: 30%; left: 20%;"></div>
+            <div class="water-stain" style="bottom: 15%; right: 15%;"></div>
+            <div class="day-counter">Tag 5</div>
+            <div class="handwriting-desperate">
+                <p><span class="double-underline">Beobachtungen über Torvald:</span></p>
+                <br>
+                <p>- Schläft nicht mehr. Sagt, er braucht keinen Schlaf.</p>
+                <p>- Isst nicht. <span class="crossed-out">Verweigert jedes Essen.</span> Sagt, er hat keinen Hunger.</p>
+                <p>- Trinkt NUR Wasser. VIEL Wasser. Ich gehe 4-5 Mal am Tag zum Brunnen.</p>
+                <p>- Spricht manchmal in einer Sprache, die ich nicht verstehe. Klingt wie... knisterndes Feuer?</p>
+                <p>- Erkennt mich manchmal nicht. Dann wieder doch. <span class="emphasized">Die klaren Momente werden seltener.</span></p>
+                <br>
+                <p class="circled">Heute sagte er: "Das Feuer ruft mich heim, kleiner Bruder."</p>
+                <p class="circled">Was bedeutet das???</p>
+            </div>
+            <div class="margin-note">Ich habe solche Angst</div>
+        </div>
+
+        <div class="separator">***</div>
+
+        <!-- Fourth note - Torvald's violence -->
+        <div class="note note-torn">
+            <div class="scorch-mark" style="top: 10%; right: 25%;"></div>
+            <div class="scorch-mark" style="bottom: 20%; left: 30%;"></div>
+            <div class="tear-stain" style="top: 40%; right: 35%;"></div>
+            <div class="tear-stain" style="top: 43%; right: 37%;"></div>
+            <div class="tear-stain" style="top: 45%; right: 36%;"></div>
+            <div class="day-counter">Tag 8</div>
+            <div class="handwriting-shaky">
+                <p class="urgent">Er ist aggressiv geworden</p>
+                <br>
+                <p>Heute Nacht wachte ich auf. Torvald stand über mir. Seine Augen glühten.</p>
+                <p>Er hob seine Hand, als wollte er mich... schlagen? Berühren? Verbrennen?</p>
+                <p>Dann hielt er inne. Weinte. Oder versuchte es - die Tränen verdampften sofort.</p>
+                <p>"Lauf weg, Krellin. Ich... ich kann mich nicht kontrollieren."</p>
+                <br>
+                <p><span class="emphasized">Ich kann ihn nicht zuhause behalten. Die Nachbarn werden es bemerken.</span></p>
+                <p><span class="emphasized">Ich muss ihn verstecken.</span></p>
+                <br>
+                <p class="barely-legible">Das alte Lagerhaus im Hafenviertel. Verlassen. Niemand geht dort hin.</p>
+            </div>
+        </div>
+
+        <!-- Fifth note - The plan -->
+        <div class="note note-crumpled note-stained">
+            <div class="water-stain" style="top: 25%; left: 10%;"></div>
+            <div class="date-stamp">Tag 10 - Nachts</div>
+            <div class="handwriting-desperate">
+                <p class="emphasized">PLAN: Was ich brauche</p>
+                <br>
+                <div class="sketch-box">
+                    <ul class="desperate-list">
+                        <li class="arrow-right"><span class="underlined">Wasser</span> - VIEL Wasser. Er trinkt Unmengen. Mindestens 20 Flaschen.</li>
+                        <li class="arrow-right"><span class="underlined">Ketten & Seile</span> - Wenn er wieder aggressiv wird, muss ich ihn festbinden können. <span class="barely-legible">Götter, vergib mir...</span></li>
+                        <li class="arrow-right"><span class="underlined">Kohle</span> - Vielleicht absorbiert Kohle die Hitze? Wie bei einem Schmelzofen? <span class="barely-legible">Ich weiß es nicht, ich WEISS ES NICHT</span></li>
+                        <li class="arrow-right"><span class="underlined">Werkzeug</span> - Barrikaden für das Lagerhaus. Niemand darf ihn finden.</li>
+                        <li class="arrow-right"><span class="underlined">Seile</span> - Extra. Für... für Notfälle.</li>
+                    </ul>
+                </div>
+                <br>
+                <p>Ich habe kein Geld. Die Heiler haben alles genommen.</p>
+                <p><span class="crossed-out">Ich könnte betteln?</span> → Zu langsam</p>
+                <p><span class="crossed-out">Ich könnte arbeiten?</span> → Keine Zeit, Torvald wird schlimmer</p>
+                <br>
+                <p class="circled emphasized">Boris Laden hat alles, was ich brauche.</p>
+                <p class="barely-legible">Nachts. Kellerfenster. Rein und raus. Nur das Nötigste.</p>
+                <p class="barely-legible smudge">Ich bin kein Dieb. Aber ich habe keine Wahl.</p>
+            </div>
+        </div>
+
+        <!-- Sixth note - After the theft -->
+        <div class="note">
+            <div class="scorch-mark" style="bottom: 30%; right: 20%;"></div>
+            <div class="tear-stain" style="top: 50%; left: 40%;"></div>
+            <div class="day-counter">Tag 11 - Nach dem Einbruch</div>
+            <div class="handwriting-normal">
+                <p>Ich habe es getan.</p>
+                <p>Ich habe in Boris Laden eingebrochen.</p>
+                <p>Meine Hände zittern noch. Das Fenster war so klein. Ich habe mich durchgezwängt.</p>
+                <p>Die Kasse war offen. 50 Goldstücke. Ich hätte sie nehmen können.</p>
+                <p><span class="emphasized">Ich habe sie nicht genommen.</span></p>
+                <p>Ich bin kein Dieb. Ich... ich versuche nur, meinen Bruder zu retten.</p>
+                <br>
+                <p class="barely-legible">Bori wird mich hassen. Die ganze Stadt wird mich hassen.</p>
+                <p class="barely-legible">Aber Torvald lebt noch. Das ist alles, was zählt.</p>
+            </div>
+        </div>
+
+        <div class="separator">***</div>
+
+        <!-- Seventh note - Desperation peaks -->
+        <div class="note note-torn note-stained">
+            <div class="scorch-mark" style="top: 20%; left: 15%;"></div>
+            <div class="scorch-mark" style="top: 25%; left: 18%;"></div>
+            <div class="scorch-mark" style="bottom: 30%; right: 25%;"></div>
+            <div class="water-stain" style="top: 50%; right: 10%;"></div>
+            <div class="tear-stain" style="bottom: 15%; left: 20%;"></div>
+            <div class="tear-stain" style="bottom: 18%; left: 22%;"></div>
+            <div class="tear-stain" style="bottom: 20%; left: 21%;"></div>
+            <div class="day-counter">Tag 14</div>
+            <div class="handwriting-desperate">
+                <p class="breakdown">Es wird schlimmer</p>
+                <p class="breakdown">Es wird immer schlimmer</p>
+                <br>
+                <p>Die Risse in seiner Haut werden breiter. Das Licht wird heller.</p>
+                <p>Er erkennt mich kaum noch.</p>
+                <p>Wenn ich ihn "Torvald" nenne, reagiert er manchmal nicht.</p>
+                <p>Heute nannte er sich selbst <span class="emphasized">"Glutdiener"</span>. Was bedeutet das?!</p>
+                <br>
+                <p><span class="crossed-out">Kohle hilft nicht</span></p>
+                <p><span class="crossed-out">Wasser hilft nicht</span></p>
+                <p><span class="crossed-out">Ketten halten ihn kaum noch - er wird stärker</span></p>
+                <p><span class="crossed-out">Gebete helfen nicht</span></p>
+                <p><span class="crossed-out">NICHTS HILFT</span></p>
+                <br>
+                <p class="urgent">Bitte funktioniere... bitte...</p>
+                <p class="urgent">Bitte komm zurück zu mir</p>
+            </div>
+        </div>
+
+        <!-- Eighth note - A glimmer of hope -->
+        <div class="note note-crumpled">
+            <div class="water-stain" style="bottom: 20%; right: 20%;"></div>
+            <div class="date-stamp">Tag 15</div>
+            <div class="handwriting-shaky">
+                <p>Heute hatte er einen klaren Moment.</p>
+                <p>Zehn Minuten, vielleicht. Vielleicht weniger.</p>
+                <br>
+                <p>Er sah mich an. <span class="emphasized">Wirklich sah mich an</span>. Mit seinen echten Augen. Nicht den glühenden.</p>
+                <p>"Krellin," sagte er. Seine normale Stimme. Schwach, aber seine.</p>
+                <br>
+                <p class="circled">"Bruder, wenn ich mich vollständig verwandle... wenn ich kein Mensch mehr bin..."</p>
+                <p class="circled">"...versprich mir, dass du mich nicht zurückhältst."</p>
+                <p class="circled">"Versprich mir, dass du weglaufst."</p>
+                <br>
+                <p class="breakdown">ICH HABE NEIN GESAGT</p>
+                <p class="breakdown">ICH LASSE IHN NICHT GEHEN</p>
+                <br>
+                <p>"Ich werde dich retten, Torvald. Ich schwöre es."</p>
+                <p>Er weinte. Dann war der Moment vorbei.</p>
+                <p>Die glühenden Augen kamen zurück.</p>
+            </div>
+        </div>
+
+        <!-- Ninth note - Healer visits -->
+        <div class="note">
+            <div class="scorch-mark" style="top: 15%; right: 30%;"></div>
+            <div class="day-counter">Tag 17</div>
+            <div class="handwriting-normal">
+                <p><span class="underlined">Heiler, die ich aufgesucht habe:</span></p>
+                <br>
+                <ul class="desperate-list">
+                    <li><span class="emphasized">Brunna Kräuterhand</span> - Gab mir alles, was sie hatte. Sagte, es sei magisch, nicht medizinisch. <span class="crossed-out">Ihre Tränke helfen nicht mehr</span></li>
+                    <li><span class="emphasized">Thordis vom Seifenladen</span> - Verkaufte mir Seifenflocken für Kühlumschläge. <span class="crossed-out">Funktioniert nicht</span></li>
+                    <li><span class="emphasized">Priester im Moradin-Tempel</span> - Betete für uns. <span class="crossed-out">Die Götter schweigen</span></li>
+                    <li class="crossed-out">Die Glühenden Hallen - NEIN. Niemals. Dort hat es angefangen.</li>
+                </ul>
+                <br>
+                <p>Brunna sagte etwas Merkwürdiges: <span class="emphasized">"Elementare Transformation."</span></p>
+                <p>Sie sagte, normale Heilung funktioniert nicht.</p>
+                <p>Sie sagte, ich brauche <span class="underlined">mächtige Magie</span>.</p>
+                <br>
+                <p class="barely-legible">Wo finde ich mächtige Magie? Ich bin nur ein Laufbursche.</p>
+                <p class="barely-legible">Ich bin 19. Ich verstehe das alles nicht.</p>
+            </div>
+        </div>
+
+        <div class="separator">***</div>
+
+        <!-- Tenth note - Breaking point -->
+        <div class="note note-torn note-stained">
+            <div class="scorch-mark" style="top: 10%; left: 10%;"></div>
+            <div class="scorch-mark" style="top: 15%; left: 14%;"></div>
+            <div class="scorch-mark" style="top: 20%; left: 18%;"></div>
+            <div class="scorch-mark" style="bottom: 10%; right: 10%;"></div>
+            <div class="scorch-mark" style="bottom: 15%; right: 14%;"></div>
+            <div class="water-stain" style="top: 40%; left: 30%;"></div>
+            <div class="tear-stain" style="top: 60%; right: 25%;"></div>
+            <div class="tear-stain" style="top: 63%; right: 27%;"></div>
+            <div class="tear-stain" style="top: 65%; right: 26%;"></div>
+            <div class="tear-stain" style="bottom: 25%; left: 35%;"></div>
+            <div class="day-counter">Tag 19 - Nachts</div>
+            <div class="handwriting-desperate">
+                <p class="urgent">Ich kann nicht mehr schlafen</p>
+                <br>
+                <p>Jedes Mal wenn ich die Augen schließe, sehe ich ihn.</p>
+                <p>Sehe die glühenden Risse. Höre seine verzerrte Stimme.</p>
+                <p>Höre ihn schreien: <span class="emphasized">"DAS FEUER RUFT MICH"</span></p>
+                <br>
+                <p>Die Ketten halten ihn nicht mehr richtig. Er ist so stark geworden.</p>
+                <p>Heute hat er eine Kette gesprengt. Einfach zerrissen. Als wäre sie aus Papier.</p>
+                <p>Ich musste neue besorgen. Dickere. <span class="barely-legible">Ich habe kein Geld mehr</span></p>
+                <br>
+                <p class="breakdown">ICH VERLIERE IHN</p>
+                <p class="breakdown">ICH VERLIERE MEINEN BRUDER</p>
+                <br>
+                <p class="circled emphasized">Er ist alles, was ich noch habe.</p>
+                <p class="circled emphasized">Mama und Papa sind tot.</p>
+                <p class="circled emphasized">Torvald hat mich großgezogen.</p>
+                <p class="circled emphasized">Er hat mich geliebt, als niemand sonst es tat.</p>
+                <br>
+                <p class="breakdown">Ich kann ihn nicht verlieren</p>
+                <p class="breakdown">Ich kann ihn nicht verlieren</p>
+                <p class="breakdown">Ich kann ihn nicht verlieren</p>
+            </div>
+        </div>
+
+        <!-- Eleventh note - The plea -->
+        <div class="note note-crumpled">
+            <div class="tear-stain" style="top: 20%; left: 20%;"></div>
+            <div class="tear-stain" style="top: 25%; left: 25%;"></div>
+            <div class="tear-stain" style="top: 30%; left: 22%;"></div>
+            <div class="tear-stain" style="bottom: 30%; right: 30%;"></div>
+            <div class="scorch-mark" style="bottom: 20%; left: 40%;"></div>
+            <div class="date-stamp">Tag 20</div>
+            <div class="handwriting-desperate">
+                <p style="text-align: center; font-size: 1.5em; margin: 30px 0;">
+                    <span class="emphasized">An jeden, der das liest:</span>
+                </p>
+                <br>
+                <p>Wenn ihr diese Notizen findet, bedeutet das, dass etwas schiefgegangen ist.</p>
+                <p>Bedeutet, dass ich versagt habe.</p>
+                <br>
+                <p>Mein Name ist Krellin Aschenfuß. Ich bin 19 Jahre alt.</p>
+                <p>Mein Bruder heißt Torvald. Er ist 24.</p>
+                <p><span class="emphasized">Er ist krank. Er verwandelt sich in etwas.</span></p>
+                <br>
+                <p>Ich habe gestohlen. Ich habe gelogen. Ich habe ihn versteckt.</p>
+                <p class="underlined">Aber ich habe es aus Liebe getan.</p>
+                <br>
+                <p>Wenn ihr ihn findet - <span class="urgent">bitte tut ihm nicht weh</span>.</p>
+                <p>Er war ein guter Mensch. Ein brillanter Forscher. Ein liebevoller Bruder.</p>
+                <p>Was auch immer er geworden ist - das ist nicht seine Schuld.</p>
+                <br>
+                <p class="circled emphasized">Es begann in den Glühenden Hallen.</p>
+                <p class="circled emphasized">Bei dem Monolithen.</p>
+                <p class="circled emphasized">Er kam zu nah.</p>
+                <br>
+                <p>Wenn es einen Weg gibt, ihn zu retten - <span class="double-underline">bitte versucht es</span>.</p>
+                <p>Wenn es keinen Weg gibt... dann macht es schnell. Schmerzlos.</p>
+                <br>
+                <p style="text-align: center; margin-top: 40px;">
+                    <span class="barely-legible smudge">Er hat mich großgezogen, als Mama und Papa starben.</span><br>
+                    <span class="barely-legible smudge">Er hat mir Lesen beigebracht.</span><br>
+                    <span class="barely-legible smudge">Er hat mir beigebracht, stark zu sein.</span><br>
+                    <span class="barely-legible smudge">Er hat mir beigebracht, niemals aufzugeben.</span><br>
+                    <br>
+                    <span class="emphasized">Und ich werde nicht aufgeben.</span><br>
+                    <span class="emphasized">Nicht solange er noch atmet.</span><br>
+                    <span class="emphasized">Nicht solange Hoffnung besteht.</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Final note - Last observation -->
+        <div class="note note-torn">
+            <div class="scorch-mark" style="top: 25%; right: 20%;"></div>
+            <div class="scorch-mark" style="top: 30%; right: 25%;"></div>
+            <div class="scorch-mark" style="bottom: 25%; left: 25%;"></div>
+            <div class="water-stain" style="bottom: 35%; right: 15%;"></div>
+            <div class="tear-stain" style="top: 50%; left: 40%;"></div>
+            <div class="tear-stain" style="top: 52%; left: 42%;"></div>
+            <div class="day-counter">Tag 21 - Heute Morgen</div>
+            <div class="handwriting-shaky">
+                <p>Heute morgen, als ich aufwachte, stand er über mir.</p>
+                <p>Die Ketten waren gebrochen. Alle.</p>
+                <p>Seine ganze Haut glüht jetzt. Überall Risse, überall Licht.</p>
+                <p>Seine Augen sind nur noch Feuer.</p>
+                <br>
+                <p>Er stand da. Sah auf mich herab.</p>
+                <p>Ich dachte: <span class="barely-legible">Das ist das Ende. Er wird mich töten.</span></p>
+                <br>
+                <p>Aber dann...</p>
+                <p>...dann beugte er sich herunter.</p>
+                <p>Legte seine brennende Hand auf meinen Kopf.</p>
+                <p>Und flüsterte, in seiner echten Stimme:</p>
+                <br>
+                <p class="circled emphasized" style="text-align: center; padding: 20px; font-size: 1.3em;">
+                    "Danke, kleiner Bruder."<br>
+                    "Danke, dass du nicht aufgegeben hast."<br>
+                    "Danke, dass du mich geliebt hast."
+                </p>
+                <br>
+                <p>Dann legte er sich wieder hin.</p>
+                <p>Ließ sich von mir neu fesseln.</p>
+                <br>
+                <p class="breakdown" style="font-size: 1.2em;">Er kämpft noch</p>
+                <p class="breakdown" style="font-size: 1.2em;">Er ist noch da drinnen</p>
+                <p class="breakdown" style="font-size: 1.2em;">Mein Bruder lebt noch</p>
+                <br>
+                <p style="text-align: center; margin-top: 40px;">
+                    <span class="emphasized double-underline">Ich werde ihn retten.</span><br>
+                    <span class="emphasized double-underline">Egal was es kostet.</span><br>
+                    <span class="emphasized double-underline">Ich schwöre es.</span>
+                </p>
+            </div>
+        </div>
+
+        <!-- Closing note -->
+        <div style="text-align: center; margin-top: 60px; margin-bottom: 40px; font-family: 'Patrick Hand', cursive; font-size: 1.1em; color: #5a3520; font-style: italic;">
+            <p>[ Diese Notizen wurden in einem versteckten Fach gefunden, ]</p>
+            <p>[ zusammen mit verbrannten Stoffresten und leeren Wasserflaschen. ]</p>
+            <p>[ Sie erzählen die Geschichte von verzweifelter Bruderliebe ]</p>
+            <p>[ in den dunkelsten Stunden. ]</p>
+        </div>
+    </div>
+</body>
+</html>

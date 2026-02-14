@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Der Eisenhafen Bote - Ausgabe 2.847</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Crimson Text', 'Georgia', serif;
+            background: #e8dcc0;
+            color: #1a1a1a;
+            line-height: 1.55;
+            padding: 30px 15px;
+        }
+
+        .newspaper {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: #faf8f3;
+            box-shadow: 0 0 30px rgba(0,0,0,0.4);
+            padding: 50px 40px;
+            border: 8px double #2c2416;
+            position: relative;
+        }
+
+        /* Vintage texture overlay */
+        .newspaper::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,.03) 2px, rgba(0,0,0,.03) 4px);
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        /* Decorative corner ornaments */
+        .ornament {
+            position: absolute;
+            font-size: 2em;
+            color: #2c2416;
+            opacity: 0.4;
+        }
+        .ornament.top-left { top: 15px; left: 15px; }
+        .ornament.top-right { top: 15px; right: 15px; }
+        .ornament.bottom-left { bottom: 15px; left: 15px; }
+        .ornament.bottom-right { bottom: 15px; right: 15px; }
+
+        /* Masthead */
+        .masthead {
+            text-align: center;
+            border-bottom: 6px double #2c2416;
+            padding-bottom: 25px;
+            margin-bottom: 35px;
+            position: relative;
+        }
+
+        .masthead h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 5em;
+            font-weight: 900;
+            letter-spacing: 8px;
+            margin: 20px 0 15px 0;
+            text-transform: uppercase;
+            color: #2c2416;
+            text-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+            line-height: 1;
+        }
+
+        .masthead .tagline {
+            font-style: italic;
+            font-size: 1.3em;
+            margin: 15px 0;
+            color: #555;
+            font-weight: 600;
+        }
+
+        .masthead .meta {
+            font-size: 1em;
+            margin-top: 20px;
+            color: #666;
+            border-top: 2px solid #999;
+            padding-top: 15px;
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+        }
+
+        .masthead .meta > span {
+            padding: 0 15px;
+        }
+
+        /* Decorative dividers */
+        .divider-ornate {
+            text-align: center;
+            margin: 25px 0;
+            font-size: 1.5em;
+            color: #666;
+        }
+
+        /* Headlines */
+        .headline {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 0 0 8px 0;
+            letter-spacing: 1.5px;
+            line-height: 1.2;
+            color: #1a1a1a;
+        }
+
+        .headline-main {
+            font-size: 3.2em;
+            line-height: 1.1;
+            border-bottom: 4px solid #2c2416;
+            border-top: 2px solid #2c2416;
+            padding: 15px 0;
+            margin: 0 0 20px 0;
+            text-align: center;
+            letter-spacing: 3px;
+        }
+
+        .headline-large {
+            font-size: 2em;
+            border-bottom: 3px double #666;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .headline-medium {
+            font-size: 1.5em;
+            border-bottom: 2px solid #999;
+            padding-bottom: 5px;
+            margin-bottom: 8px;
+        }
+
+        .headline-small {
+            font-size: 1.2em;
+            margin-bottom: 6px;
+        }
+
+        .subheadline {
+            font-size: 1.15em;
+            font-style: italic;
+            color: #444;
+            margin: 8px 0 12px 0;
+            line-height: 1.4;
+            font-weight: 600;
+        }
+
+        /* Byline & Dateline */
+        .byline {
+            font-weight: 600;
+            font-size: 0.95em;
+            margin: 8px 0;
+            font-style: italic;
+        }
+
+        .dateline {
+            font-variant: small-caps;
+            font-weight: bold;
+            font-size: 0.95em;
+            letter-spacing: 1px;
+        }
+
+        /* Multi-column layouts */
+        .col-3 {
+            column-count: 3;
+            column-gap: 35px;
+            column-rule: 1px solid #ccc;
+        }
+
+        .col-4 {
+            column-count: 4;
+            column-gap: 30px;
+            column-rule: 1px solid #ccc;
+        }
+
+        .col-5 {
+            column-count: 5;
+            column-gap: 25px;
+            column-rule: 1px solid #ddd;
+        }
+
+        /* Flex layout for aligned boxes */
+        .flex-3 {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+            justify-content: space-between;
+        }
+
+        .flex-3 > * {
+            flex: 1;
+            min-width: 0;
+        }
+
+        /* Articles */
+        article {
+            break-inside: avoid;
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+
+        .article-text {
+            margin-top: 8px;
+            text-align: justify;
+            hyphens: auto;
+        }
+
+        .article-text p {
+            margin-bottom: 10px;
+            text-indent: 1.5em;
+        }
+
+        .article-text p:first-child,
+        .article-text p:has(.dateline) {
+            text-indent: 0;
+        }
+
+        .article-text strong {
+            font-weight: 700;
+        }
+
+        /* Section Headers */
+        .section-header {
+            font-family: 'Cinzel', serif;
+            font-size: 1.8em;
+            font-weight: 700;
+            text-transform: uppercase;
+            text-align: center;
+            border-top: 4px double #2c2416;
+            border-bottom: 4px double #2c2416;
+            padding: 12px 10px;
+            margin: 35px 0 25px 0;
+            letter-spacing: 3px;
+            background: linear-gradient(to bottom, #f5f5f5 0%, #fff 50%, #f5f5f5 100%);
+        }
+
+        /* Boxes */
+        .box {
+            border: 3px double #2c2416;
+            padding: 15px;
+            margin: 20px 0;
+            background: #fff;
+            break-inside: avoid;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.05);
+        }
+
+        .box-title {
+            font-family: 'Cinzel', serif;
+            font-weight: 700;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid #666;
+            padding-bottom: 5px;
+        }
+
+        /* Ads */
+        .ad-box {
+            border: 5px double #2c2416;
+            padding: 25px;
+            margin: 30px 0;
+            text-align: center;
+            background: linear-gradient(135deg, #fefefe 0%, #f8f8f8 100%);
+            break-inside: avoid;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .ad-box h3 {
+            font-family: 'Cinzel', serif;
+            font-size: 2em;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+        }
+
+        .ad-box .ad-text {
+            margin: 15px 0;
+            line-height: 1.9;
+            font-size: 1.05em;
+        }
+
+        /* Classifieds & Small ads */
+        .classifieds {
+            font-size: 0.9em;
+            border: 2px solid #999;
+            padding: 15px;
+            background: #fafafa;
+            break-inside: avoid;
+        }
+
+        .classified-item {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            text-indent: -20px;
+            line-height: 1.6;
+        }
+
+        .classified-item strong {
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.95em;
+        }
+
+        /* Info boxes */
+        .info-box {
+            border: 2px solid #666;
+            padding: 15px;
+            margin: 20px 0;
+            background: #f9f9f9;
+            break-inside: avoid;
+        }
+
+        .info-box h4 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Opinion piece */
+        .opinion {
+            font-style: italic;
+            padding: 15px;
+            border-left: 4px solid #2c2416;
+            border-right: 4px solid #2c2416;
+            margin: 20px 0;
+            background: #f9f9f6;
+            break-inside: avoid;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 25px;
+            border-top: 6px double #2c2416;
+            font-size: 0.95em;
+        }
+
+        .footer-motto {
+            font-family: 'Cinzel', serif;
+            font-style: italic;
+            font-weight: 700;
+            font-size: 1.4em;
+            margin: 20px 0;
+            letter-spacing: 2px;
+        }
+
+        /* Thick dividers */
+        .thick-divider {
+            border-top: 4px double #2c2416;
+            margin: 30px 0;
+        }
+
+        .thin-divider {
+            border-top: 1px solid #ccc;
+            margin: 15px 0;
+        }
+
+        /* Mobile */
+        @media (max-width: 1200px) {
+            .col-4, .col-5 { column-count: 3; }
+            .masthead h1 { font-size: 3.5em; }
+        }
+
+        @media (max-width: 768px) {
+            .col-3, .col-4, .col-5 { column-count: 1; column-rule: none; }
+            .flex-3 { flex-direction: column; }
+            .masthead h1 { font-size: 2.5em; }
+            .headline-main { font-size: 2em; }
+        }
+
+        /* Print - Booklet Style for A4 (1 sheet folded = 4 pages) */
+        @media print {
+            @page {
+                size: A4 portrait;
+                margin: 1.5cm 1cm 2cm 1cm;
+                @bottom-center {
+                    content: "Der Eisenhafen Bote - Ausgabe 2.847";
+                    font-size: 8pt;
+                    color: #666;
+                }
+            }
+
+            body {
+                background: white;
+                padding: 0;
+                margin: 0;
+            }
+
+            .newspaper {
+                box-shadow: none;
+                border: 2px solid #2c2416;
+                border-bottom: 4px double #2c2416;
+                max-width: 100%;
+                padding: 8px;
+                margin: 0;
+                page-break-after: auto;
+            }
+
+            /* Running footer on each page */
+            .newspaper::after {
+                content: "";
+                display: block;
+                position: fixed;
+                bottom: 0.5cm;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background: #999;
+            }
+
+            /* Keep ornaments */
+            .ornament {
+                display: none;
+            }
+
+            /* Prevent unwanted page breaks */
+            article, .opinion, .box, .info-box, .ad-box, .classifieds {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+
+            /* Allow column content to break if needed */
+            .col-3, .col-4 {
+                page-break-inside: auto;
+                break-inside: auto;
+            }
+
+            /* Section headers */
+            .section-header {
+                page-break-before: auto;
+                page-break-after: avoid;
+                break-after: avoid;
+                font-size: 1em;
+                padding: 5px 3px;
+                margin: 8px 0 6px 0;
+            }
+
+            /* Force page break before classifieds and info sections */
+            .classifieds {
+                page-break-before: avoid;
+            }
+
+            .flex-3 {
+                page-break-before: auto;
+            }
+
+            /* Keep masthead on first page */
+            .masthead {
+                page-break-after: avoid;
+                padding-bottom: 10px;
+                margin-bottom: 12px;
+            }
+
+            .masthead h1 {
+                font-size: 2.2em;
+                letter-spacing: 3px;
+                margin: 8px 0;
+            }
+
+            .masthead .tagline {
+                font-size: 0.85em;
+                margin: 6px 0;
+            }
+
+            .masthead .meta {
+                font-size: 0.75em;
+                margin-top: 8px;
+                padding-top: 8px;
+            }
+
+            /* Reduce main headline */
+            h2.headline-main {
+                font-size: 1.4em;
+                padding: 8px 0;
+                margin: 0 0 10px 0;
+            }
+
+            .subheadline {
+                font-size: 0.85em;
+                margin: 5px 0 8px 0;
+            }
+
+            .byline {
+                font-size: 0.75em;
+                margin: 4px 0;
+            }
+
+            /* Adjust column layouts for A4 portrait booklet */
+            .col-3 {
+                column-count: 2;
+                column-gap: 12px;
+                column-rule: 1px solid #ddd;
+            }
+
+            .col-4 {
+                column-count: 2;
+                column-gap: 10px;
+                column-rule: 1px solid #ddd;
+            }
+
+            .col-5, .col-3[style*="column-gap: 40px"] {
+                column-count: 2;
+                column-gap: 10px;
+                column-rule: 1px solid #ddd;
+            }
+
+            /* Headlines in columns */
+            .headline-large {
+                font-size: 1.1em;
+                margin-bottom: 4px;
+            }
+
+            .headline-medium {
+                font-size: 0.95em;
+                margin-bottom: 3px;
+            }
+
+            .headline-small {
+                font-size: 0.85em;
+                margin-bottom: 3px;
+            }
+
+            /* Articles */
+            article {
+                margin-bottom: 8px;
+            }
+
+            .article-text {
+                font-size: 0.8em;
+                line-height: 1.3;
+            }
+
+            .article-text p {
+                margin-bottom: 4px;
+            }
+
+            /* Flexbox: stack vertically for booklet pages */
+            .flex-3 {
+                display: block;
+                page-break-inside: auto;
+            }
+
+            .flex-3 > * {
+                display: block;
+                width: 100%;
+                margin-bottom: 15px;
+                page-break-inside: avoid;
+            }
+
+            .flex-3 > *:last-child {
+                margin-bottom: 0;
+            }
+
+            /* Boxes */
+            .box, .info-box {
+                padding: 6px;
+                margin: 6px 0;
+                font-size: 0.75em;
+            }
+
+            .box-title, .info-box h4 {
+                font-size: 0.9em;
+                margin-bottom: 4px;
+            }
+
+            /* Ad boxes */
+            .ad-box {
+                padding: 8px;
+                margin: 8px 0;
+            }
+
+            .ad-box h3 {
+                font-size: 1.1em;
+                margin-bottom: 5px;
+            }
+
+            .ad-box .ad-text {
+                font-size: 0.75em;
+                line-height: 1.4;
+            }
+
+            /* Classifieds */
+            .classifieds {
+                font-size: 0.7em;
+                padding: 6px;
+            }
+
+            .classified-item {
+                margin-bottom: 3px;
+                line-height: 1.25;
+            }
+
+            /* Reduce spacing */
+            .thick-divider {
+                margin: 6px 0;
+            }
+
+            .divider-ornate {
+                margin: 6px 0;
+                font-size: 0.8em;
+            }
+
+            /* Opinion */
+            .opinion {
+                padding: 6px;
+                margin: 6px 0;
+                font-size: 0.8em;
+            }
+
+            /* Footer */
+            .footer {
+                margin-top: 12px;
+                padding-top: 8px;
+                font-size: 0.7em;
+            }
+
+            .footer-motto {
+                font-size: 0.9em;
+                margin: 8px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="newspaper">
+        <!-- Masthead -->
+        <div class="masthead">
+            <h1>Der Eisenhafen Bote</h1>
+            <div class="tagline">Die Stimme des Volkes seit 342 Jahren</div>
+            <div class="meta">
+                <span><strong>Ausgabe 2.847</strong></span>
+                <span>15. Hammer, 1492 DR</span>
+                <span>Preis: 2 Kupferstücke</span>
+            </div>
+        </div>
+
+        <!-- MAIN HEADLINE -->
+        <h2 class="headline-main">Mysteriöses Hämmern aus den Glühenden Hallen wird immer lauter</h2>
+        <p class="subheadline">Bewohner berichten von nächtlichen Geräuschen - Hallenrat schweigt - Forderung nach Untersuchung</p>
+        <p class="byline">Von Thorin Federkiel, Chefredakteur</p>
+
+        <div class="col-3">
+            <article>
+                <div class="article-text">
+                    <p><span class="dateline">EISENHAFEN</span> - Seit fünf Jahren berichten Anwohner der Glühenden Hallen von einem seltsamen Phänomen: In manchen Nächten ist ein dumpfes, rhythmisches Hämmern aus den tiefen Kammern der altehrwürdigen Institution zu hören. Doch in den letzten Wochen hat sich die Situation verschärft - das Hämmern wird lauter, häufiger und beunruhigender.</p>
+                    <p>"Es klingt wie ein Herzschlag", berichtet Marta Spinelsmith, Anwohnerin im nahen Wohnviertel. "Erst war es kaum zu hören, nur alle paar Wochen. Jetzt ist es fast jede Nacht. Manche sagen, es sei nur die Schmiede, aber ich kenne den Unterschied zwischen einem Schmiedehammer und... diesem Ding."</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-small">Rat äußert sich nicht</h3>
+                <div class="article-text">
+                    <p>Auf Anfragen des Boten reagierte der Rat der Sieben, das Führungsgremium der Glühenden Hallen, nur mit einer knappen schriftlichen Stellungnahme: "Die Glühenden Hallen führen derzeit intensive Forschungs- und Wartungsarbeiten durch. Geräusche aus den tiefen Werkstätten sind normal und kein Grund zur Sorge."</p>
+                    <p>Doch nicht alle Bürger sind beruhigt. Stadtrat Grimnar Eisenfaust fordert eine unabhängige Untersuchung.</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-small">Gerüchte um Forscher</h3>
+                <div class="article-text">
+                    <p>Unbestätigten Berichten zufolge sind in den letzten Monaten mehrere Forscher der Hallen verschwunden oder mit "mysteriösen Krankheiten" nach Hause geschickt worden. Die Glühenden Hallen dementieren dies vehement.</p>
+                    <p>"Alles nur Klatsch und Tratsch", so Meister Dorgrun Steinwach, Anführer der Halle des Erzes.</p>
+                </div>
+            </article>
+        </div>
+
+        <div class="opinion">
+            <strong>Unsere Meinung:</strong> Die Glühenden Hallen haben über Jahrhunderte einen exzellenten Ruf genossen. Gerade deshalb sollten sie transparent sein und die Sorgen der Bürger ernst nehmen. Schweigen schürt nur Misstrauen.
+        </div>
+
+        <div class="thick-divider"></div>
+
+        <!-- MIXED NEWS SECTION -->
+        <div class="section-header">Nachrichten aus der Stadt</div>
+
+        <div class="col-4">
+            <!-- Scattered crime stories mixed with regular news -->
+
+            <article>
+                <h3 class="headline-medium">Kupferpreise steigen weiter</h3>
+                <p class="byline">Von Ragnar Münzenzähler</p>
+                <div class="article-text">
+                    <p>Die Copper Enterprises Guild meldet Rekordumsätze. Der Kupferpreis ist in den letzten drei Monaten um 15% gestiegen.</p>
+                    <p>"Die Nachfrage aus den südlichen Königreichen ist enorm", erklärt Gildensprecher Thorin Kupferader.</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-small">Seltsamer Einbruch im Hafenviertel</h3>
+                <div class="article-text">
+                    <p><span class="dateline">HAFENVIERTEL</span> - In der Nacht zum Dienstag wurde in den General Store "The Charming Dungeon" eingebrochen. Der Täter stahl jedoch keine Wertsachen, sondern Eisenwaren, Seile, Kohle und eine große Menge Wasserflaschen.</p>
+                    <p>Ladenbesitzer Borin Kupferbart ist ratlos: "Wer klaut WASSER und lässt Gold liegen?" Die Stadtwache geht von einem "verzweifelten Amateur" aus.</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-medium">Stadtwache wird aufgestockt</h3>
+                <div class="article-text">
+                    <p><span class="dateline">RATHAUS</span> - Der Stadtrat hat einstimmig ein Budget für 20 zusätzliche Wachen bewilligt. "Angesichts der wachsenden Bevölkerung war das überfällig", so Hauptmann Schildbrecher.</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-small">Neue Schmiede eröffnet</h3>
+                <div class="article-text">
+                    <p><span class="dateline">SCHMIEDEVIERTEL</span> - "Coal Smithing" verspricht "Qualität zum halben Preis". Die etablierte Konkurrenz zeigt sich skeptisch.</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-medium">Fuhrunternehmer tot aufgefunden</h3>
+                <div class="article-text">
+                    <p><span class="dateline">HAFENVIERTEL</span> - Der bekannte Geschäftsmann Grendel Eisenträger (67) wurde gestern tot in einem Hafenlagerhaus aufgefunden. Der Zwerg wurde durch einen Stich in den Rücken getötet.</p>
+                    <p>"Wir gehen von einem Raubmord aus", erklärt Hauptmann Schildbrecher. "Die Taschen des Opfers waren leer." Die Stadtwache bittet um Hinweise.</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-small">Lonely Earth Store feiert Jubiläum</h3>
+                <div class="article-text">
+                    <p>25 Jahre im Dienst der Gemeinschaft: Der "Lonely Earth General Store" feiert sein Jubiläum mit 10% Rabatt diese Woche.</p>
+                </div>
+            </article>
+
+            <!-- Continue with more articles -->
+            <article>
+                <h3 class="headline-small">Importsteuer-Debatte im Stadtrat</h3>
+                <p class="byline">Von Haldor Rechtsfeder</p>
+                <div class="article-text">
+                    <p>Hitzige Diskussion über mögliche Erhöhung der Importsteuer. Händlervertreter warnen vor negativen Auswirkungen. Entscheidung in zwei Wochen.</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-medium">Theater erntet Standing Ovations</h3>
+                <p class="byline">Von Ilda Kulturblick</p>
+                <div class="article-text">
+                    <p><span class="dateline">THEATER AM MARKT</span> - "Die Schmiedin von Moradin" begeistert. "Eine moderne Perspektive auf zeitlose Werte", schwärmt Kritiker Eldrin Scharfzunge. Vorstellungen bis Monatsende.</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-small">Badehaus nach Renovierung wiedereröffnet</h3>
+                <div class="article-text">
+                    <p>Das "Klassische Magier-Badehaus" öffnet nach drei Monaten wieder. Modernste Magie-Heizung installiert. Sonderangebot: 5 SP statt 8 SP diese Woche.</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-small">Neue Bücher in Stadtbibliothek</h3>
+                <div class="article-text">
+                    <p>47 seltene Bücher aus dem Nachlass des verstorbenen Gelehrten Aldrim Steinweise sind ab sofort zugänglich. Darunter Alchemie-Traktate und ein Band über die frühe Geschichte der Glühenden Hallen.</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-medium">Hammerwurf: Heimsieg!</h3>
+                <p class="byline">Von Brok Muskelarm</p>
+                <div class="article-text">
+                    <p><span class="dateline">ARENA</span> - Triumph! Thorgal "Eisenarm" Steinbrecher holte sich den Sieg mit 47,3 Metern! Der Pokal bleibt zum dritten Mal in Folge in Eisenhafen.</p>
+                </div>
+            </article>
+
+            <article>
+                <h3 class="headline-small">Neubau im Nordviertel</h3>
+                <div class="article-text">
+                    <p>15 moderne Wohnungen entstehen. Mieten ab 25 GP/Monat. Baumeister Glauyax verspricht Fertigstellung im Frühjahr.</p>
+                </div>
+            </article>
+        </div>
+
+        <div class="divider-ornate">* * *</div>
+
+        <!-- CLASSIFIEDS SECTION (Cat hidden here!) -->
+        <div class="section-header" style="page-break-before: always;">Anzeigen & Gesuche</div>
+
+        <div class="classifieds">
+            <div class="col-3" style="column-gap: 40px;">
+                <div class="classified-item"><strong>GESUCHT:</strong> Vermisste Katze! "Rubinpfötchen", rot-getigert mit weißen Pfoten, seit drei Tagen verschwunden. Wer Hinweise hat, melde sich bei Marta Spinelsmith, Spinelsmith Residence. Finderlohn: 5 GP.</div>
+
+                <div class="classified-item"><strong>VERMISST:</strong> Fenris Tintenfinger (24), Lehrling bei Jurgarin-Schreibstube, seit einer Woche verschwunden. Wer Hinweise hat, melde sich bei Meisterin Helda Jurgarin oder der Stadtwache.</div>
+
+                <div class="classified-item"><strong>VERKAUFE:</strong> Schmiedewerkzeug-Set, gut erhalten, 15 GP. Kontakt: Hammerhand, Schmiedeviertel 7.</div>
+
+                <div class="classified-item"><strong>SUCHE:</strong> Erfahrenen Korbmacher-Lehrling. Gute Bezahlung. Stoutstone Basket-maker.</div>
+
+                <div class="classified-item"><strong>ANGEBOT:</strong> Schreibarbeiten jeder Art. Günstige Preise für Verträge, Briefe, Urkunden. Jurgarin Bookbinder.</div>
+
+                <div class="classified-item"><strong>VERKAUFE:</strong> Gebrauchte Rüstung (Größe M), kleine Macken, 25 GP VB. Kaserne, Wache Thorin fragen.</div>
+
+                <div class="classified-item"><strong>SUCHE:</strong> Mitbewohner für WG in "Enchanting Flats". 8 GP/Monat inkl. Nebenkosten. Nichtraucher bevorzugt.</div>
+
+                <div class="classified-item"><strong>BIETE:</strong> Pelzarbeiten, Reparaturen und Neuanfertigungen. Baequisithek Furrier.</div>
+
+                <div class="classified-item"><strong>ANGEBOT:</strong> Räucherfleisch-Kurs bei Skilled Smoker. Samstag, 10 Uhr. 2 GP. Jetzt anmelden!</div>
+            </div>
+        </div>
+
+        <div class="thin-divider"></div>
+
+        <div style="margin: 15px 0; padding: 10px; border: 2px solid #666; background: #f5f5f5;">
+            <h4 style="font-family: 'Cinzel', serif; text-align: center; font-size: 1.1em; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">Offizielle Anzeigen</h4>
+
+            <div class="classified-item" style="margin-bottom: 8px;"><strong>STURMRUFER HAUPTQUARTIER:</strong> Abenteurergilde sucht fähige Helden für Eskorte-Dienste, Monster-Jagd und Spezialaufträge. Gute Bezahlung, faire Verträge. Vorstellungen täglich 10-16 Uhr, Gildenstraße 1.</div>
+
+            <div class="classified-item" style="margin-bottom: 8px;"><strong>GLÜHENDE HALLEN:</strong> Tag der offenen Tür nächsten Samstag! Führungen alle 2 Stunden, 10-18 Uhr. Eintritt frei. *Tiefe Kammern für Besucher nicht zugänglich.</div>
+
+            <div class="classified-item"><strong>HANDELSFLOTTE:</strong> Regelmäßige Verbindungen - Mo/Do: Sandspitze, Di/Fr: Nebelhafen, Mi/Sa: Silberwald (Elfenware & Waldschätze), So: Silbermond. Ab 25 GP, Pier 3.</div>
+        </div>
+
+        <div class="thick-divider"></div>
+
+        <!-- INFO BOXES -->
+        <div class="flex-3">
+            <div class="info-box">
+                <h4>Wetter diese Woche</h4>
+                <p><strong>Mo-Mi:</strong> Leichter Schneefall, -5°C<br>
+                <strong>Do-Fr:</strong> Bewölkt, -3°C<br>
+                <strong>Sa-So:</strong> Sonnig, -1°C</p>
+                <p style="margin-top: 10px; font-style: italic; font-size: 0.95em;">"Wenn's im Hammer friert und schneit, ist der Frühling noch nicht weit!"</p>
+            </div>
+
+            <div class="info-box">
+                <h4>Veranstaltungen</h4>
+                <p><strong>Heute:</strong> Stadtratssitzung (öffentlich), 14:00 Uhr, Rathaus<br>
+                Theater "Die Schmiedin", 19:00 Uhr</p>
+                <p><strong>Samstag:</strong> Räucherfleisch-Kurs, 10:00 Uhr<br>
+                Ringkampf-Liga, 15:00 Uhr</p>
+                <p><strong>Sonntag:</strong> Moradins Segen, 09:00 Uhr<br>
+                Familien-Hammerwurf, 16:00 Uhr (frei)</p>
+            </div>
+
+            <div class="box">
+                <div class="box-title">Leserbriefe</div>
+                <p style="margin: 10px 0;"><strong>Betr: Glühende Hallen</strong></p>
+                <p style="font-style: italic; margin-left: 15px; font-size: 0.95em;">"Ich lebe seit 40 Jahren neben den Glühenden Hallen und habe noch nie solche Geräusche gehört. Der Rat sollte Klartext reden!" - Brunhilde Erzliebes</p>
+                <p style="margin-top: 10px;"><em>Antwort der Redaktion: Wir teilen Ihre Bedenken.</em></p>
+            </div>
+        </div>
+
+        <div class="thick-divider"></div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="divider-ornate">* * *</div>
+            <p style="font-style: italic; margin: 15px 0;">Vielen Dank fürs Lesen! Die nächste Ausgabe erscheint in drei Tagen.</p>
+            <div class="footer-motto">DER EISENHAFEN BOTE<br><span style="font-size: 0.8em;">Die Wahrheit in Stein gemeißelt</span></div>
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 2px solid #999; font-size: 0.85em; color: #666;">
+                <strong>Der Eisenhafen Bote</strong> | Herausgeber: Thorin Federkiel | Redaktion: Papierstraße 12<br>
+                Druckerei: Eisenhafen Presse GmbH | Erscheint dreimal wöchentlich | Anzeigenannahme bis 14 Uhr am Vortag
+            </div>
+        </div>
+    </div>
+</body>
+</html>

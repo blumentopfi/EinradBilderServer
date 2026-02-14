@@ -842,6 +842,24 @@ app.use(express.static('public', {
   etag: true
 }));
 
+// Serve HTML documents from root (with authentication)
+const htmlDocuments = [
+  'Fall 2 - Glühende Hallen Vertraulicher Bericht.html',
+  'Fall 2 - Krellins Verzweiflungsnotizen.html',
+  'Fall 2 - Medizinisches Beobachtungsprotokoll.html',
+  'Fall 2 - Stadtwache Einbruchsbericht.html',
+  'Fall 2 - Torvalds Forschungstagebuch.html',
+  'Fenris_Tagebuch.html',
+  'Goblin-Lösegeld-Notiz.html',
+  'eisenhafen-bote.html'
+];
+
+htmlDocuments.forEach(filename => {
+  app.get(`/${filename}`, requireAuth, (req, res) => {
+    res.sendFile(path.join(__dirname, filename));
+  });
+});
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
