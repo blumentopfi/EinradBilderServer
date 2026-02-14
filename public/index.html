@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Einrad Bildergalerie - Organisieren und teilen Sie Ihre Einrad-Bilder und Videos">
     <title>Einrad Bildergalerie</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
     <!-- Login Screen -->
     <div id="login-screen" class="screen">
         <img src="unicycle.png" class="unicycle-bg" alt="Einrad">
@@ -27,54 +29,56 @@
         <header>
             <div class="header-top">
                 <div class="header-title">
-                    <img src="unicycle.png" class="header-logo" alt="Einrad">
+                    <img src="unicycle.png" class="header-logo" alt="Einrad Logo">
                     <h1>Bildergalerie</h1>
                 </div>
-                <div class="header-controls">
-                    <button id="gallery-nav-btn" class="btn-nav active">Galerie</button>
+                <nav class="header-controls" aria-label="Hauptnavigation">
+                    <button id="gallery-nav-btn" class="btn-nav active" aria-current="page">Galerie</button>
                     <button id="game-nav-btn" class="btn-nav">Spiel</button>
                     <button id="admin-btn" class="btn-nav hidden">Admin</button>
                     <button id="faq-btn" class="btn-nav">FAQ</button>
                     <div class="user-menu">
-                        <button id="user-menu-btn" class="user-menu-btn">
+                        <button id="user-menu-btn" class="user-menu-btn" aria-haspopup="true" aria-expanded="false">
                             <span id="user-info"></span>
-                            <span class="dropdown-arrow">▼</span>
+                            <span class="dropdown-arrow" aria-hidden="true">▼</span>
                         </button>
-                        <div id="user-dropdown" class="user-dropdown hidden">
-                            <button id="change-password-btn" class="dropdown-item">
-                                <span class="dropdown-icon">🔑</span> Passwort ändern
+                        <div id="user-dropdown" class="user-dropdown hidden" role="menu">
+                            <button id="change-password-btn" class="dropdown-item" role="menuitem">
+                                <span class="dropdown-icon" aria-hidden="true">🔑</span> Passwort ändern
                             </button>
-                            <button id="logout-btn" class="dropdown-item">
-                                <span class="dropdown-icon">🚪</span> Abmelden
+                            <button id="logout-btn" class="dropdown-item" role="menuitem">
+                                <span class="dropdown-icon" aria-hidden="true">🚪</span> Abmelden
                             </button>
                         </div>
                     </div>
-                </div>
+                </nav>
             </div>
             <!-- Breadcrumb will be inserted here by JavaScript -->
-            <div class="gallery-toolbar">
+            <div class="gallery-toolbar" role="toolbar" aria-label="Galerie-Werkzeuge">
                 <div class="toolbar-left">
-                    <span id="selected-count" class="selected-count">0 ausgewählt</span>
+                    <span id="selected-count" class="selected-count" aria-live="polite">0 ausgewählt</span>
                 </div>
                 <div class="toolbar-right">
-                    <button id="download-btn" class="btn-primary" disabled>Ausgewählte herunterladen</button>
-                    <button id="select-all-btn" class="btn-secondary">Alle auswählen</button>
-                    <button id="deselect-all-btn" class="btn-secondary">Alle abwählen</button>
+                    <button id="download-btn" class="btn-primary" disabled aria-label="Ausgewählte Bilder herunterladen">Ausgewählte herunterladen</button>
+                    <button id="select-all-btn" class="btn-secondary" aria-label="Alle Bilder auswählen">Alle auswählen</button>
+                    <button id="deselect-all-btn" class="btn-secondary" aria-label="Alle Bilder abwählen">Alle abwählen</button>
                 </div>
             </div>
         </header>
 
-        <div id="loading" class="loading hidden">Bilder werden geladen...</div>
-        <div id="error-message" class="error-message"></div>
+        <div id="loading" class="loading hidden" role="status" aria-live="polite">Bilder werden geladen...</div>
+        <div id="error-message" class="error-message" role="alert" aria-live="assertive"></div>
 
-        <div id="gallery" class="gallery"></div>
+        <main id="main-content">
+            <div id="gallery" class="gallery" role="region" aria-label="Bildergalerie"></div>
+        </main>
     </div>
 
     <!-- Change Password Modal -->
-    <div id="change-password-modal" class="modal hidden">
+    <div id="change-password-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="change-password-title">
         <div class="modal-content">
-            <span class="close-modal" id="close-change-password">&times;</span>
-            <h2>Passwort ändern</h2>
+            <button class="close-modal" id="close-change-password" aria-label="Schließen">&times;</button>
+            <h2 id="change-password-title">Passwort ändern</h2>
             <form id="change-password-form">
                 <div class="form-group">
                     <label for="current-password">Aktuelles Passwort *</label>
@@ -98,17 +102,18 @@
     </div>
 
     <!-- Preview Modal -->
-    <div id="preview-modal" class="modal hidden">
+    <div id="preview-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="preview-title">
         <div class="modal-content">
-            <span class="close-modal">&times;</span>
+            <button class="close-modal" aria-label="Vorschau schließen">&times;</button>
+            <h2 id="preview-title" class="sr-only">Medienvorschau</h2>
             <div id="preview-container">
                 <img id="preview-image" src="" alt="Vorschau" class="hidden">
-                <video id="preview-video" controls class="hidden"></video>
+                <video id="preview-video" controls class="hidden" aria-label="Video Vorschau"></video>
             </div>
-            <div class="modal-nav">
-                <button id="prev-btn" class="nav-btn">&#8249; Vorheriges</button>
-                <button id="next-btn" class="nav-btn">Nächstes &#8250;</button>
-            </div>
+            <nav class="modal-nav" aria-label="Medien-Navigation">
+                <button id="prev-btn" class="nav-btn" aria-label="Vorheriges Bild anzeigen">&#8249; Vorheriges</button>
+                <button id="next-btn" class="nav-btn" aria-label="Nächstes Bild anzeigen">Nächstes &#8250;</button>
+            </nav>
         </div>
     </div>
 

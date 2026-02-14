@@ -1,3 +1,35 @@
+// Utility functions
+const DEBUG = false;
+const log = (...args) => DEBUG && console.log(...args);
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+async function fetchWithRetry(url, options = {}, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return response;
+        } catch (error) {
+            if (i === retries - 1) throw error;
+            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        }
+    }
+}
+
+// Device detection
+const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
 // State management
 let images = [];
 let folders = [];
@@ -65,25 +97,19 @@ function showLogin() {
 }
 
 function showGallery() {
-    console.log('showGallery called');
-    console.log('loginScreen:', loginScreen);
-    console.log('galleryScreen:', galleryScreen);
+    log('showGallery called');
     loginScreen.classList.add('hidden');
     galleryScreen.classList.remove('hidden');
-    console.log('Classes updated - loginScreen:', loginScreen.className, 'galleryScreen:', galleryScreen.className);
 
     // Update user info display
     if (currentUser) {
-        console.log('Current user:', currentUser);
-        console.log('User role:', currentUser.role);
+        log('Current user:', currentUser.displayName, 'Role:', currentUser.role);
         userInfo.textContent = `Angemeldet als: ${currentUser.displayName}`;
 
         // Show admin button if user is admin or uploader
         if (currentUser.role === 'admin' || currentUser.role === 'uploader') {
-            console.log('Showing admin button for role:', currentUser.role);
             adminBtn.classList.remove('hidden');
         } else {
-            console.log('Hiding admin button for role:', currentUser.role);
             adminBtn.classList.add('hidden');
         }
     }
@@ -108,30 +134,27 @@ loginForm.addEventListener('submit', async (e) => {
     const password = passwordInput.value;
 
     try {
-        console.log('Attempting login...');
+        log('Attempting login for user:', username);
         const response = await fetch('/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
 
-        console.log('Login response:', response.status, response.ok);
-
         if (response.ok) {
             const data = await response.json();
             currentUser = data.user;
-            console.log('Login successful, showing gallery...');
+            log('Login successful');
             loginError.textContent = '';
             usernameInput.value = '';
             passwordInput.value = '';
             showGallery();
         } else {
-            console.log('Login failed');
             const errorData = await response.json();
             loginError.textContent = errorData.error || 'Ungültiger Benutzername oder Passwort';
         }
     } catch (error) {
-        console.error('Login error:', error);
+        log('Login error:', error);
         loginError.textContent = 'Verbindungsfehler';
     }
 });
@@ -154,8 +177,9 @@ faqBtn.addEventListener('click', () => {
 // User menu dropdown handling
 userMenuBtn.addEventListener('click', (e) => {
     e.stopPropagation();
-    userDropdown.classList.toggle('hidden');
+    const isExpanded = userDropdown.classList.toggle('hidden');
     userMenuBtn.classList.toggle('active');
+    userMenuBtn.setAttribute('aria-expanded', !isExpanded);
 });
 
 // Close dropdown when clicking outside
@@ -163,6 +187,7 @@ document.addEventListener('click', (e) => {
     if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
         userDropdown.classList.add('hidden');
         userMenuBtn.classList.remove('active');
+        userMenuBtn.setAttribute('aria-expanded', 'false');
     }
 });
 
@@ -218,7 +243,7 @@ changePasswordForm.addEventListener('submit', async (e) => {
             changePasswordError.textContent = data.error || 'Fehler beim Ändern des Passworts';
         }
     } catch (error) {
-        console.error('Change password error:', error);
+        log('Change password error:', error);
         changePasswordError.textContent = 'Verbindungsfehler';
     }
 });
@@ -233,7 +258,7 @@ logoutBtn.addEventListener('click', async () => {
         gallery.innerHTML = '';
         showLogin();
     } catch (error) {
-        console.error('Logout error:', error);
+        log('Logout error:', error);
     }
 });
 
@@ -255,7 +280,7 @@ async function loadImages(path = '') {
         renderGallery();
     } catch (error) {
         errorMessage.textContent = 'Medien konnten nicht geladen werden';
-        console.error('Load media error:', error);
+        log('Load media error:', error);
     } finally {
         loading.classList.add('hidden');
     }
@@ -319,7 +344,16 @@ function renderBreadcrumb() {
     home.textContent = '🏠 Start';
     if (currentPath) {
         home.style.cursor = 'pointer';
+        home.setAttribute('tabindex', '0');
+        home.setAttribute('role', 'button');
+        home.setAttribute('aria-label', 'Zur Startseite navigieren');
         home.addEventListener('click', () => loadImages(''));
+        home.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                loadImages('');
+            }
+        });
     }
     breadcrumb.appendChild(home);
 
@@ -340,7 +374,16 @@ function renderBreadcrumb() {
         if (!isLast) {
             const itemPath = pathSoFar;
             item.style.cursor = 'pointer';
+            item.setAttribute('tabindex', '0');
+            item.setAttribute('role', 'button');
+            item.setAttribute('aria-label', `Zu ${part} navigieren`);
             item.addEventListener('click', () => loadImages(itemPath));
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    loadImages(itemPath);
+                }
+            });
         }
 
         breadcrumb.appendChild(item);
@@ -351,10 +394,14 @@ function renderBreadcrumb() {
 function createBackButton() {
     const card = document.createElement('div');
     card.className = 'folder-card back-button';
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', 'Zurück zum übergeordneten Ordner');
 
     const icon = document.createElement('div');
     icon.className = 'folder-icon back-icon';
     icon.innerHTML = '←';
+    icon.setAttribute('aria-hidden', 'true');
 
     card.appendChild(icon);
 
@@ -370,10 +417,14 @@ function createBackButton() {
 function createFolderCard(folder) {
     const card = document.createElement('div');
     card.className = 'folder-card';
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `Ordner ${folder.name} öffnen`);
 
     const icon = document.createElement('div');
     icon.className = 'folder-icon';
     icon.innerHTML = '📁';
+    icon.setAttribute('aria-hidden', 'true');
 
     const name = document.createElement('div');
     name.className = 'folder-name';
@@ -389,6 +440,34 @@ function createFolderCard(folder) {
     return card;
 }
 
+// Lazy loading observer
+const imageObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            const media = entry.target;
+            const wrapper = media.parentElement;
+
+            if (media.dataset.src) {
+                wrapper.classList.add('loading');
+                media.src = media.dataset.src;
+
+                media.addEventListener('load', () => {
+                    wrapper.classList.remove('loading');
+                    media.classList.add('loaded');
+                }, { once: true });
+
+                media.addEventListener('loadeddata', () => {
+                    wrapper.classList.remove('loading');
+                    media.classList.add('loaded');
+                }, { once: true });
+
+                delete media.dataset.src;
+            }
+            imageObserver.unobserve(media);
+        }
+    });
+}, { rootMargin: '100px' });
+
 // Create media card (image or video)
 function createMediaCard(fileObj, index) {
     const card = document.createElement('div');
@@ -397,6 +476,9 @@ function createMediaCard(fileObj, index) {
     card.dataset.path = fileObj.path;
     card.dataset.name = fileObj.name;
     card.dataset.type = fileObj.type;
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `${fileObj.name} - ${fileObj.type === 'video' ? 'Video' : 'Bild'}`);
 
     const wrapper = document.createElement('div');
     wrapper.className = 'image-wrapper';
@@ -404,32 +486,77 @@ function createMediaCard(fileObj, index) {
     let mediaElement;
     if (fileObj.type === 'video') {
         mediaElement = document.createElement('video');
-        mediaElement.src = `/api/media/${encodeURIComponent(fileObj.path)}`;
+        mediaElement.dataset.src = `/api/media/${encodeURIComponent(fileObj.path)}`;
         mediaElement.muted = true;
         mediaElement.loop = true;
         mediaElement.playsInline = true;
-        mediaElement.preload = 'metadata';
+        mediaElement.preload = 'none';
+        mediaElement.setAttribute('aria-label', fileObj.name);
 
         // Add play icon overlay
         const playIcon = document.createElement('div');
         playIcon.className = 'play-icon';
         playIcon.innerHTML = '▶';
+        playIcon.setAttribute('aria-hidden', 'true');
         wrapper.appendChild(playIcon);
 
-        // Hover to play preview
-        card.addEventListener('mouseenter', () => {
-            mediaElement.play().catch(() => {});
-        });
-        card.addEventListener('mouseleave', () => {
-            mediaElement.pause();
-            mediaElement.currentTime = 0;
-        });
+        // Desktop: hover to play / Mobile: tap play icon
+        if (!isTouchDevice) {
+            card.addEventListener('mouseenter', () => {
+                if (mediaElement.src) {
+                    mediaElement.play().catch(() => {});
+                }
+            });
+            card.addEventListener('mouseleave', () => {
+                mediaElement.pause();
+                mediaElement.currentTime = 0;
+            });
+        } else {
+            playIcon.style.pointerEvents = 'auto';
+            playIcon.style.cursor = 'pointer';
+            playIcon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (mediaElement.paused) {
+                    mediaElement.play().catch(() => {});
+                    playIcon.style.opacity = '0';
+                } else {
+                    mediaElement.pause();
+                    playIcon.style.opacity = '1';
+                }
+            });
+        }
+
+        // Lazy load video when visible
+        imageObserver.observe(mediaElement);
     } else {
         mediaElement = document.createElement('img');
-        mediaElement.src = `/api/media/${encodeURIComponent(fileObj.path)}`;
+        mediaElement.dataset.src = `/api/media/${encodeURIComponent(fileObj.path)}`;
         mediaElement.alt = fileObj.name;
-        mediaElement.loading = 'lazy';
+
+        // Use Intersection Observer for lazy loading
+        imageObserver.observe(mediaElement);
     }
+
+    // Error handling
+    mediaElement.addEventListener('error', () => {
+        const errorOverlay = document.createElement('div');
+        errorOverlay.className = 'media-error';
+        errorOverlay.innerHTML = `
+            <div class="media-error-icon" aria-hidden="true">⚠️</div>
+            <div>Fehler beim Laden</div>
+            <button class="retry-btn">Erneut versuchen</button>
+        `;
+        wrapper.appendChild(errorOverlay);
+
+        errorOverlay.querySelector('.retry-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            errorOverlay.remove();
+            const src = mediaElement.dataset.src || mediaElement.src;
+            mediaElement.src = '';
+            mediaElement.dataset.src = src;
+            imageObserver.observe(mediaElement);
+        });
+    });
 
     const checkbox = document.createElement('div');
     checkbox.className = 'checkbox-overlay';
@@ -532,7 +659,7 @@ downloadBtn.addEventListener('click', async () => {
         downloadBtn.disabled = false;
     } catch (error) {
         alert('Download fehlgeschlagen. Bitte versuchen Sie es erneut.');
-        console.error('Download error:', error);
+        log('Download error:', error);
         downloadBtn.textContent = 'Ausgewählte herunterladen';
         downloadBtn.disabled = false;
     }
@@ -605,15 +732,71 @@ previewModal.addEventListener('click', (e) => {
 prevBtn.addEventListener('click', showPrevImage);
 nextBtn.addEventListener('click', showNextImage);
 
-// Keyboard navigation
+// Touch gestures for mobile
+let touchStartX = 0;
+let touchEndX = 0;
+
+previewModal.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+}, { passive: true });
+
+previewModal.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    handleSwipe();
+}, { passive: true });
+
+function handleSwipe() {
+    const swipeThreshold = 50;
+    if (touchEndX < touchStartX - swipeThreshold) {
+        showNextImage(); // Swipe left
+    } else if (touchEndX > touchStartX + swipeThreshold) {
+        showPrevImage(); // Swipe right
+    }
+}
+
+// Enhanced keyboard navigation
 document.addEventListener('keydown', (e) => {
+    // Don't interfere with form inputs
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
     if (!previewModal.classList.contains('hidden')) {
+        // Preview modal shortcuts
         if (e.key === 'Escape') {
             closePreview();
         } else if (e.key === 'ArrowLeft') {
+            e.preventDefault();
             showPrevImage();
         } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
             showNextImage();
+        }
+    } else if (!changePasswordModal.classList.contains('hidden')) {
+        // Change password modal shortcuts
+        if (e.key === 'Escape') {
+            changePasswordModal.classList.add('hidden');
+        }
+    } else {
+        // Gallery shortcuts
+        if (e.key === 'a' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            selectAllBtn.click();
+        } else if (e.key === 'Escape') {
+            if (selectedImages.size > 0) {
+                deselectAllBtn.click();
+            }
+        } else if (e.key === 'd' && (e.ctrlKey || e.metaKey) && selectedImages.size > 0) {
+            e.preventDefault();
+            downloadBtn.click();
+        }
+    }
+});
+
+// Keyboard activation for cards (Enter/Space)
+document.addEventListener('keydown', (e) => {
+    if (e.target.classList.contains('image-card') || e.target.classList.contains('folder-card')) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.target.click();
         }
     }
 });
