@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Einrad Bildergalerie - Organisieren und teilen Sie Ihre Einrad-Bilder und Videos">
+    <meta name="theme-color" content="#f5f7fa" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)">
     <title>Einrad Bildergalerie</title>
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -11,21 +13,21 @@
     <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
     <!-- Login Screen -->
     <div id="login-screen" class="screen">
-        <img src="unicycle.png" class="unicycle-bg" alt="Einrad">
+        <img src="unicycle.png" class="unicycle-bg" alt="" aria-hidden="true" width="300" height="300">
         <div class="login-container">
-            <img src="unicycle.png" class="unicycle-logo" alt="Einrad">
+            <img src="unicycle.png" class="unicycle-logo" alt="" aria-hidden="true" width="80" height="80">
             <h1>Bildergalerie</h1>
             <form id="login-form">
-                <input type="text" id="username-input" placeholder="Benutzername" required autocomplete="username">
+                <input type="text" id="username-input" name="username" placeholder="Benutzername" required autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off">
                 <div class="password-input-wrapper">
-                    <input type="password" id="password-input" placeholder="Passwort" required autocomplete="current-password">
+                    <input type="password" id="password-input" name="password" placeholder="Passwort" required autocomplete="current-password" spellcheck="false">
                     <button type="button" id="toggle-password" class="toggle-password-btn" aria-label="Passwort anzeigen" tabindex="-1">
                         <span class="eye-icon" aria-hidden="true"></span>
                     </button>
                 </div>
                 <button type="submit">Anmelden</button>
             </form>
-            <div id="login-error" class="error-message"></div>
+            <div id="login-error" class="error-message" role="alert" aria-live="polite"></div>
         </div>
     </div>
 
@@ -34,7 +36,7 @@
         <header>
             <div class="header-top">
                 <div class="header-title">
-                    <img src="unicycle.png" class="header-logo" alt="Einrad Logo">
+                    <img src="unicycle.png" class="header-logo" alt="" aria-hidden="true" width="40" height="40">
                     <h1>Bildergalerie</h1>
                 </div>
                 <nav class="header-controls" aria-label="Hauptnavigation">
@@ -89,7 +91,7 @@
             </div>
         </header>
 
-        <div id="loading" class="loading hidden" role="status" aria-live="polite">Bilder werden geladen...</div>
+        <div id="loading" class="loading hidden" role="status" aria-live="polite">Bilder werden geladen…</div>
         <div id="error-message" class="error-message" role="alert" aria-live="assertive"></div>
 
         <main id="main-content">
@@ -105,17 +107,17 @@
             <form id="change-password-form">
                 <div class="form-group">
                     <label for="current-password">Aktuelles Passwort *</label>
-                    <input type="password" id="current-password" required minlength="8">
+                    <input type="password" id="current-password" name="current-password" required minlength="8" autocomplete="current-password" spellcheck="false">
                 </div>
                 <div class="form-group">
                     <label for="new-password-input">Neues Passwort *</label>
-                    <input type="password" id="new-password-input" required minlength="8">
+                    <input type="password" id="new-password-input" name="new-password" required minlength="8" autocomplete="new-password" spellcheck="false">
                 </div>
                 <div class="form-group">
                     <label for="confirm-new-password">Neues Passwort bestätigen *</label>
-                    <input type="password" id="confirm-new-password" required minlength="8">
+                    <input type="password" id="confirm-new-password" name="confirm-new-password" required minlength="8" autocomplete="new-password" spellcheck="false">
                 </div>
-                <div id="change-password-error" class="error-message"></div>
+                <div id="change-password-error" class="error-message" role="alert" aria-live="polite"></div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" id="cancel-change-password">Abbrechen</button>
                     <button type="submit" class="btn-primary">Passwort ändern</button>
@@ -135,7 +137,7 @@
         <button id="prev-btn" class="preview-nav-btn preview-nav-prev" aria-label="Vorheriges Bild anzeigen">&#8249;</button>
         <button id="next-btn" class="preview-nav-btn preview-nav-next" aria-label="Nächstes Bild anzeigen">&#8250;</button>
         <div id="preview-container" class="preview-container">
-            <img id="preview-image" src="" alt="Vorschau" class="hidden">
+            <img id="preview-image" src="" alt="" class="hidden" width="1" height="1">
             <video id="preview-video" controls class="hidden" aria-label="Video Vorschau"></video>
         </div>
         <div id="preview-filename" class="preview-filename"></div>

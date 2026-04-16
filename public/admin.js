@@ -609,7 +609,7 @@ function addToUploadQueue(file) {
             <div class="progress-bar">
                 <div class="progress-fill" style="width: 0%"></div>
             </div>
-            <div class="upload-status">Warte...</div>
+            <div class="upload-status">Warte…</div>
         </div>
         <button class="remove-upload-btn" data-upload-id="${uploadId}">×</button>
     `;

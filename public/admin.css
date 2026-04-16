@@ -56,10 +56,12 @@
     color: #666;
     cursor: pointer;
     border-bottom: 3px solid transparent;
-    transition: all 0.3s;
+    transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
     display: flex;
     align-items: center;
     gap: 8px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .tab-btn:hover {
@@ -201,9 +203,11 @@
     border-radius: 6px;
     font-size: 13px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
     background: #f0f0f0;
     color: #333;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .action-btn:hover {
@@ -263,7 +267,7 @@
     border-radius: 12px;
     padding: 60px 40px;
     text-align: center;
-    transition: all 0.3s;
+    transition: border-color 0.3s ease, background-color 0.3s ease, transform 0.3s ease;
     cursor: pointer;
     background: #fafafa;
 }
@@ -322,7 +326,7 @@
     display: flex;
     align-items: center;
     gap: 15px;
-    transition: all 0.2s;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .upload-item:hover {
@@ -349,11 +353,13 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .upload-size {
     font-size: 13px;
     color: #666;
+    font-variant-numeric: tabular-nums;
 }
 
 .upload-progress {
@@ -399,7 +405,9 @@
     cursor: pointer;
     font-size: 18px;
     color: #666;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .remove-upload-btn:hover {
@@ -459,7 +467,7 @@
     border: 2px solid #e0e0e0;
     border-radius: 8px;
     font-size: 15px;
-    transition: all 0.3s;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .form-group input:focus,
@@ -661,7 +669,7 @@
     border-radius: 12px;
     padding: 24px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .document-card:hover {
@@ -697,7 +705,7 @@
     color: #333;
     text-decoration: none;
     border-radius: 8px;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
     font-size: 14px;
     border: 1px solid transparent;
 }
@@ -937,6 +945,7 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    font-variant-numeric: tabular-nums;
 }
 
 .stat-details {
@@ -974,6 +983,7 @@
 .stat-value {
     font-weight: 600;
     color: #222;
+    font-variant-numeric: tabular-nums;
 }
 
 .stat-row.highlight .stat-value {
@@ -1014,11 +1024,13 @@
 .bulk-counter {
     font-size: 14px;
     color: #333;
+    font-variant-numeric: tabular-nums;
 }
 
 .bulk-counter strong {
     color: #ff6b35;
     font-size: 16px;
+    font-variant-numeric: tabular-nums;
 }
 
 .bulk-action-buttons {
@@ -1114,6 +1126,7 @@
     font-family: monospace;
     font-size: 12.5px;
     color: #555;
+    font-variant-numeric: tabular-nums;
 }
 
 .audit-table .col-user,

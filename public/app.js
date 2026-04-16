@@ -1053,7 +1053,7 @@ downloadBtn.addEventListener('click', async () => {
 
     try {
         downloadBtn.disabled = true;
-        downloadBtn.textContent = 'Wird heruntergeladen...';
+        downloadBtn.textContent = 'Wird heruntergeladen…';
 
         const response = await fetch('/api/download', {
             method: 'POST',
