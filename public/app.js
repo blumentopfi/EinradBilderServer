@@ -159,7 +159,6 @@ const shortcutsHelpBtn = document.getElementById('shortcuts-help-btn');
 const shortcutsModal = document.getElementById('shortcuts-modal');
 const closeShortcuts = document.getElementById('close-shortcuts');
 const slideshowToggle = document.getElementById('slideshow-toggle');
-const previewCounter = document.getElementById('preview-counter');
 const rubberBand = document.getElementById('rubber-band');
 
 // Check authentication on load
