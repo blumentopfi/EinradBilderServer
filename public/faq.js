@@ -205,7 +205,155 @@ function createFaqItemElement(item) {
     answer.innerHTML = linkifyText(item.answer);
     div.appendChild(answer);
 
+    // Voting row
+    const voteRow = createVoteRow(item);
+    div.appendChild(voteRow);
+
     return div;
+}
+
+function createVoteRow(item) {
+    const row = document.createElement('div');
+    row.className = 'faq-vote-row';
+    row.dataset.itemId = item.id;
+
+    const label = document.createElement('span');
+    label.className = 'faq-vote-label';
+    label.textContent = 'War diese Antwort hilfreich?';
+    row.appendChild(label);
+
+    const buttons = document.createElement('div');
+    buttons.className = 'faq-vote-buttons';
+
+    const upBtn = document.createElement('button');
+    upBtn.type = 'button';
+    upBtn.className = 'faq-vote-btn faq-vote-up';
+    upBtn.dataset.voteType = 'up';
+    upBtn.innerHTML = `<span class="faq-vote-icon">👍</span> <span class="faq-vote-count">${item.upvotes || 0}</span>`;
+    applyVoteButtonState(upBtn, item.userVote || 0, 1);
+    upBtn.addEventListener('click', () => handleVote(item.id, 1));
+
+    const downBtn = document.createElement('button');
+    downBtn.type = 'button';
+    downBtn.className = 'faq-vote-btn faq-vote-down';
+    downBtn.dataset.voteType = 'down';
+    downBtn.innerHTML = `<span class="faq-vote-icon">👎</span> <span class="faq-vote-count">${item.downvotes || 0}</span>`;
+    applyVoteButtonState(downBtn, item.userVote || 0, -1);
+    downBtn.addEventListener('click', () => handleVote(item.id, -1));
+
+    buttons.appendChild(upBtn);
+    buttons.appendChild(downBtn);
+    row.appendChild(buttons);
+
+    const errorEl = document.createElement('span');
+    errorEl.className = 'faq-vote-error hidden';
+    errorEl.setAttribute('role', 'alert');
+    row.appendChild(errorEl);
+
+    return row;
+}
+
+function applyVoteButtonState(btn, userVote, buttonVote) {
+    const isActive = userVote === buttonVote;
+    btn.classList.toggle('active', isActive);
+    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+
+    if (buttonVote === 1) {
+        btn.setAttribute('aria-label', isActive ? 'Hilfreich (aktiviert)' : 'Hilfreich markieren');
+    } else {
+        btn.setAttribute('aria-label', isActive ? 'Nicht hilfreich (aktiviert)' : 'Nicht hilfreich markieren');
+    }
+}
+
+async function handleVote(itemId, clickedVote) {
+    const item = allFaqItems.find(i => i.id === itemId);
+    if (!item) return;
+
+    const row = faqList.querySelector(`.faq-vote-row[data-item-id="${itemId}"]`);
+    if (!row) return;
+
+    const upBtn = row.querySelector('.faq-vote-up');
+    const downBtn = row.querySelector('.faq-vote-down');
+    const upCountEl = upBtn.querySelector('.faq-vote-count');
+    const downCountEl = downBtn.querySelector('.faq-vote-count');
+    const errorEl = row.querySelector('.faq-vote-error');
+
+    // If user clicks their active vote, send 0 (remove); else send clickedVote
+    const prevUserVote = item.userVote || 0;
+    const prevUp = item.upvotes || 0;
+    const prevDown = item.downvotes || 0;
+
+    const newVote = prevUserVote === clickedVote ? 0 : clickedVote;
+
+    // Optimistic counts
+    let optimisticUp = prevUp;
+    let optimisticDown = prevDown;
+
+    // Undo previous vote
+    if (prevUserVote === 1) optimisticUp = Math.max(0, optimisticUp - 1);
+    if (prevUserVote === -1) optimisticDown = Math.max(0, optimisticDown - 1);
+    // Apply new vote
+    if (newVote === 1) optimisticUp += 1;
+    if (newVote === -1) optimisticDown += 1;
+
+    // Apply optimistic UI
+    item.userVote = newVote;
+    item.upvotes = optimisticUp;
+    item.downvotes = optimisticDown;
+    upCountEl.textContent = optimisticUp;
+    downCountEl.textContent = optimisticDown;
+    applyVoteButtonState(upBtn, newVote, 1);
+    applyVoteButtonState(downBtn, newVote, -1);
+    errorEl.classList.add('hidden');
+    errorEl.textContent = '';
+
+    upBtn.disabled = true;
+    downBtn.disabled = true;
+
+    try {
+        const response = await fetch(`/api/faq/${itemId}/vote`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ vote: newVote })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            // Server is source of truth
+            item.upvotes = typeof data.upvotes === 'number' ? data.upvotes : item.upvotes;
+            item.downvotes = typeof data.downvotes === 'number' ? data.downvotes : item.downvotes;
+            item.userVote = typeof data.userVote === 'number' ? data.userVote : item.userVote;
+
+            upCountEl.textContent = item.upvotes;
+            downCountEl.textContent = item.downvotes;
+            applyVoteButtonState(upBtn, item.userVote, 1);
+            applyVoteButtonState(downBtn, item.userVote, -1);
+        } else {
+            throw new Error(data.error || 'Fehler beim Abstimmen');
+        }
+    } catch (error) {
+        console.error('Vote error:', error);
+        // Revert optimistic update
+        item.userVote = prevUserVote;
+        item.upvotes = prevUp;
+        item.downvotes = prevDown;
+        upCountEl.textContent = prevUp;
+        downCountEl.textContent = prevDown;
+        applyVoteButtonState(upBtn, prevUserVote, 1);
+        applyVoteButtonState(downBtn, prevUserVote, -1);
+
+        errorEl.textContent = error.message || 'Verbindungsfehler';
+        errorEl.classList.remove('hidden');
+
+        setTimeout(() => {
+            errorEl.classList.add('hidden');
+            errorEl.textContent = '';
+        }, 4000);
+    } finally {
+        upBtn.disabled = false;
+        downBtn.disabled = false;
+    }
 }
 
 // Create/Edit FAQ
