@@ -100,10 +100,11 @@ let currentPath = '';
 let selectedImages = new Set();
 let currentPreviewIndex = -1;
 let currentUser = null;
+let favorites = new Set();
 
 // Filter/search state
 let searchQuery = '';
-let typeFilter = 'all'; // 'all' | 'folders' | 'images' | 'videos'
+let typeFilter = 'all'; // 'all' | 'folders' | 'images' | 'videos' | 'favorites'
 
 // Slideshow state
 let slideshowTimer = null;
@@ -185,6 +186,40 @@ function showLogin() {
     currentUser = null;
 }
 
+// Favorites API
+async function loadFavorites() {
+    try {
+        const response = await fetch('/api/favorites');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        favorites = new Set(Array.isArray(data.favorites) ? data.favorites : []);
+        log('Loaded favorites:', favorites.size);
+    } catch (error) {
+        log('Failed to load favorites:', error);
+        favorites = new Set();
+    }
+}
+
+async function addFavorite(path) {
+    const response = await fetch('/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+}
+
+async function removeFavorite(path) {
+    const response = await fetch('/api/favorites', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+}
+
 function showGallery() {
     log('showGallery called');
     loginScreen.classList.add('hidden');
@@ -213,7 +248,8 @@ function showGallery() {
         window.history.replaceState({}, '', '/');
     }
 
-    loadImages();
+    // Load favorites (non-blocking for rest of UI) then load images
+    loadFavorites().finally(() => loadImages());
 }
 
 // Login handling
@@ -337,6 +373,8 @@ logoutBtn.addEventListener('click', async () => {
     try {
         await fetch('/logout', { method: 'POST' });
         selectedImages.clear();
+        favorites.clear();
+        typeFilter = 'all';
         images = [];
         currentUser = null;
         gallery.innerHTML = '';
@@ -379,12 +417,15 @@ async function loadImages(path = '') {
     }
 }
 
-// Apply current search + type filter to an array of items (with a `name` property)
+// Apply current search + type filter to an item
 function matchesFilters(item, kind) {
     // kind: 'folder' | 'image' | 'video'
     if (typeFilter === 'folders' && kind !== 'folder') return false;
     if (typeFilter === 'images' && kind !== 'image') return false;
     if (typeFilter === 'videos' && kind !== 'video') return false;
+    if (typeFilter === 'favorites') {
+        if (kind === 'folder' || !favorites.has(item.path)) return false;
+    }
     if (searchQuery) {
         const q = searchQuery.toLowerCase();
         if (!item.name.toLowerCase().includes(q)) return false;
@@ -402,7 +443,7 @@ function renderGallery() {
     // Collect all cards for staggered animation
     const allCards = [];
 
-    // Filter folders and files according to current search/type filter
+    // Filter folders and files
     const filtersActive = searchQuery !== '' || typeFilter !== 'all';
     const visibleFolders = folders.filter(f => matchesFilters(f, 'folder'));
     const visibleFiles = images.filter(f => matchesFilters(f, f.type));
@@ -421,8 +462,8 @@ function renderGallery() {
         allCards.push(card);
     });
 
-    // Render files. Keep the original index so preview navigation works on the
-    // full list; the preview modal still iterates `images` in order.
+    // Render files, preserving the original index so preview navigation still
+    // operates on the full images array.
     images.forEach((fileObj, index) => {
         if (!matchesFilters(fileObj, fileObj.type)) return;
         const card = createMediaCard(fileObj, index);
@@ -433,13 +474,16 @@ function renderGallery() {
     // Empty states
     if (visibleFolders.length === 0 && visibleFiles.length === 0) {
         const message = document.createElement('p');
-        if (filtersActive) {
+        if (typeFilter === 'favorites') {
+            message.className = 'gallery-empty-filter';
+            message.textContent = 'Keine Favoriten in diesem Ordner';
+        } else if (filtersActive) {
             message.className = 'gallery-empty-filter';
             message.textContent = 'Keine Treffer';
         } else if (!currentPath) {
             message.textContent = 'Keine Medien im Verzeichnis gefunden';
         } else {
-            // Subfolder but empty -> let back button carry navigation, nothing else
+            // Subfolder but empty -> let back button carry navigation
             return updateSelectedCount();
         }
         gallery.appendChild(message);
@@ -838,17 +882,42 @@ function createMediaCard(fileObj, index) {
     const checkbox = document.createElement('div');
     checkbox.className = 'checkbox-overlay';
 
+    // Favorite star (top-left)
+    const favBtn = document.createElement('button');
+    favBtn.type = 'button';
+    favBtn.className = 'favorite-btn';
+    const isFav = favorites.has(fileObj.path);
+    favBtn.classList.toggle('is-favorite', isFav);
+    favBtn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+    favBtn.setAttribute('aria-label', isFav ? 'Favorit entfernen' : 'Als Favorit markieren');
+    favBtn.dataset.path = fileObj.path;
+    favBtn.innerHTML = `<span class="favorite-icon" aria-hidden="true">${isFav ? '★' : '☆'}</span>`;
+    favBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        toggleFavorite(fileObj.path, favBtn, card);
+    });
+    // Prevent star key activation from bubbling to card
+    favBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.stopPropagation();
+        }
+    });
+
     const nameDiv = document.createElement('div');
     nameDiv.className = 'image-name';
     nameDiv.textContent = fileObj.name;
 
     wrapper.appendChild(mediaElement);
+    wrapper.appendChild(favBtn);
     wrapper.appendChild(checkbox);
     card.appendChild(wrapper);
     card.appendChild(nameDiv);
 
     // Click on card to toggle selection
     card.addEventListener('click', (e) => {
+        // Ignore clicks that originated on the favorite button
+        if (e.target.closest('.favorite-btn')) return;
         if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.classList.contains('play-icon')) {
             // Click on media opens preview
             openPreview(index);
@@ -864,7 +933,62 @@ function createMediaCard(fileObj, index) {
         toggleSelection(fileObj.path, card);
     });
 
+    // Reflect selected state (useful when re-rendering with filters)
+    if (selectedImages.has(fileObj.path)) {
+        card.classList.add('selected');
+    }
+
     return card;
+}
+
+// Toggle favorite (optimistic update, revert on error)
+async function toggleFavorite(path, btn, card) {
+    const wasFavorite = favorites.has(path);
+    const nextFavorite = !wasFavorite;
+
+    // Optimistic UI
+    if (nextFavorite) {
+        favorites.add(path);
+    } else {
+        favorites.delete(path);
+    }
+    applyFavoriteUI(btn, nextFavorite);
+
+    // Animation pulse
+    btn.classList.remove('pulse');
+    // Force reflow to restart animation
+    void btn.offsetWidth;
+    btn.classList.add('pulse');
+
+    try {
+        if (nextFavorite) {
+            await addFavorite(path);
+        } else {
+            await removeFavorite(path);
+        }
+    } catch (error) {
+        log('Favorite toggle failed, reverting:', error);
+        // Revert
+        if (wasFavorite) {
+            favorites.add(path);
+        } else {
+            favorites.delete(path);
+        }
+        applyFavoriteUI(btn, wasFavorite);
+    }
+
+    // If favorites filter is active, re-render to add/remove the card from view
+    if (typeFilter === 'favorites') {
+        renderGallery();
+    }
+}
+
+function applyFavoriteUI(btn, isFavorite) {
+    btn.classList.toggle('is-favorite', isFavorite);
+    btn.setAttribute('aria-pressed', isFavorite ? 'true' : 'false');
+    btn.setAttribute('aria-label', isFavorite ? 'Favorit entfernen' : 'Als Favorit markieren');
+    const icon = btn.querySelector('.favorite-icon');
+    if (icon) icon.textContent = isFavorite ? '★' : '☆';
 }
 
 // Toggle selection
@@ -886,13 +1010,30 @@ function updateSelectedCount() {
     downloadBtn.disabled = count === 0;
 }
 
-// Select all
+// Select all (only visible files under the active filter)
 selectAllBtn.addEventListener('click', () => {
-    images.forEach(fileObj => selectedImages.add(fileObj.path));
+    const visible = images.filter(fileObj => matchesFilters(fileObj, fileObj.type));
+    visible.forEach(fileObj => selectedImages.add(fileObj.path));
     document.querySelectorAll('.image-card').forEach(card => {
         card.classList.add('selected');
     });
     updateSelectedCount();
+});
+
+// Type filter buttons (Alle / Ordner / Bilder / Videos / Favoriten)
+document.querySelectorAll('.type-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+        if (!filter || filter === typeFilter) return;
+        typeFilter = filter;
+        // Update button states
+        document.querySelectorAll('.type-filter-btn').forEach(b => {
+            const isActive = b.dataset.filter === typeFilter;
+            b.classList.toggle('active', isActive);
+            b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+        renderGallery();
+    });
 });
 
 // Deselect all
