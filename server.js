@@ -17,15 +17,20 @@ const {
   createUser,
   updateUser,
   resetUserPassword,
-  deleteUser
+  deleteUser,
+  logAudit
 } = require('./lib/userManager');
 
 const {
   getAllFaqItems,
+  getAllFaqItemsWithVotes,
   getFaqItemById,
   createFaqItem,
   updateFaqItem,
-  deleteFaqItem
+  deleteFaqItem,
+  castVote,
+  countFaqItems,
+  countFaqCategories
 } = require('./lib/faqManager');
 
 const {
@@ -35,6 +40,15 @@ const {
   getUserRecentScores,
   getUserRank
 } = require('./lib/gameManager');
+
+const {
+  getUserFavorites,
+  addFavorite,
+  removeFavorite,
+  countAllFavorites
+} = require('./lib/favoritesManager');
+
+const { getDatabase } = require('./lib/database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -694,14 +708,43 @@ app.post('/api/admin/folders', requireUploader, async (req, res) => {
 
 // ===== FAQ API ENDPOINTS =====
 
-// Get all FAQ items (accessible to all authenticated users)
+// Get all FAQ items (accessible to all authenticated users). Includes upvotes,
+// downvotes, and this user's current vote for each item.
 app.get('/api/faq', requireAuth, (req, res) => {
   try {
-    const items = getAllFaqItems();
+    const items = getAllFaqItemsWithVotes(req.session.userId);
     res.json({ items });
   } catch (error) {
     console.error('Get FAQ items error:', error);
     res.status(500).json({ error: 'Fehler beim Laden der FAQ-Einträge' });
+  }
+});
+
+// Vote on a FAQ item. Body: { vote: 1 | -1 | 0 } (0 removes the vote).
+app.post('/api/faq/:id/vote', requireAuth, (req, res) => {
+  try {
+    const { id } = req.params;
+    const { vote } = req.body;
+
+    if (typeof id !== 'string' || id.length === 0 || id.length > 128) {
+      return res.status(400).json({ error: 'Ungültige FAQ-ID' });
+    }
+
+    if (typeof vote !== 'number' || ![1, -1, 0].includes(vote)) {
+      return res.status(400).json({ error: 'Stimme muss 1, -1 oder 0 sein' });
+    }
+
+    const result = castVote(id, req.session.userId, vote);
+
+    res.json({
+      success: true,
+      upvotes: result.upvotes,
+      downvotes: result.downvotes,
+      userVote: result.userVote
+    });
+  } catch (error) {
+    console.error('FAQ vote error:', error);
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -764,6 +807,275 @@ app.delete('/api/faq/:itemId', requireAdmin, (req, res) => {
   } catch (error) {
     console.error('Delete FAQ item error:', error);
     res.status(400).json({ error: error.message });
+  }
+});
+
+// ===== FAVORITES API ENDPOINTS =====
+
+// Get the authenticated user's favorites
+app.get('/api/favorites', requireAuth, (req, res) => {
+  try {
+    const favorites = getUserFavorites(req.session.userId);
+    res.json({ favorites });
+  } catch (error) {
+    console.error('Get favorites error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der Favoriten' });
+  }
+});
+
+// Add a favorite. Idempotent - adding an existing favorite returns success.
+app.post('/api/favorites', requireAuth, (req, res) => {
+  try {
+    const { path: filePath } = req.body;
+
+    if (typeof filePath !== 'string') {
+      return res.status(400).json({ error: 'Pfad muss eine Zeichenkette sein' });
+    }
+
+    addFavorite(req.session.userId, filePath);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Add favorite error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Remove a favorite. Idempotent - removing a non-existent favorite returns success.
+app.delete('/api/favorites', requireAuth, (req, res) => {
+  try {
+    const { path: filePath } = req.body;
+
+    if (typeof filePath !== 'string') {
+      return res.status(400).json({ error: 'Pfad muss eine Zeichenkette sein' });
+    }
+
+    removeFavorite(req.session.userId, filePath);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Remove favorite error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ===== ADMIN DASHBOARD + AUDIT ENDPOINTS =====
+
+// Recursively walk a directory to count files/folders and sum sizes.
+// Skips symlinks, hidden entries, and errors on individual files.
+async function walkMediaStats(rootDir) {
+  let totalFiles = 0;
+  let totalFolders = 0;
+  let storageBytes = 0;
+
+  async function walk(dir) {
+    let entries;
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch (err) {
+      // Skip unreadable directories
+      return;
+    }
+
+    for (const entry of entries) {
+      // Skip hidden entries
+      if (entry.name.startsWith('.')) continue;
+
+      const fullPath = path.join(dir, entry.name);
+
+      // Skip symlinks to avoid cycles and unsafe paths
+      if (entry.isSymbolicLink()) continue;
+
+      if (entry.isDirectory()) {
+        totalFolders++;
+        await walk(fullPath);
+      } else if (entry.isFile()) {
+        totalFiles++;
+        try {
+          const stat = await fs.stat(fullPath);
+          storageBytes += stat.size;
+        } catch (err) {
+          // Skip files we can't stat
+        }
+      }
+    }
+  }
+
+  try {
+    await walk(rootDir);
+  } catch (err) {
+    console.error('Media stats walk error:', err);
+  }
+
+  return { totalFiles, totalFolders, storageBytes };
+}
+
+// Admin dashboard stats
+app.get('/api/admin/stats', requireAdmin, async (req, res) => {
+  try {
+    const db = getDatabase();
+
+    // User stats
+    const userCounts = db.prepare(`
+      SELECT role, COUNT(*) as count
+      FROM users
+      WHERE is_active = 1
+      GROUP BY role
+    `).all();
+
+    const userStats = { admin: 0, uploader: 0, user: 0, total: 0, activeLast7Days: 0 };
+    for (const row of userCounts) {
+      if (row.role in userStats) {
+        userStats[row.role] = row.count;
+      }
+      userStats.total += row.count;
+    }
+
+    // Active users in last 7 days
+    const cutoff = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
+    const activeRow = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM users
+      WHERE is_active = 1 AND last_login IS NOT NULL AND last_login >= ?
+    `).get(cutoff);
+    userStats.activeLast7Days = activeRow.count;
+
+    // FAQ stats
+    const faqStats = {
+      total: countFaqItems(),
+      categories: countFaqCategories()
+    };
+
+    // Media stats (walk IMAGES_DIR)
+    const mediaStats = await walkMediaStats(IMAGES_DIR);
+
+    // Favorites stats
+    const favoritesStats = {
+      total: countAllFavorites()
+    };
+
+    // Activity stats
+    // TODO: upload history is not tracked yet; uploadsLast7Days is always 0 for now
+    const activityStats = {
+      uploadsLast7Days: 0
+    };
+
+    res.json({
+      users: userStats,
+      faq: faqStats,
+      media: mediaStats,
+      favorites: favoritesStats,
+      activity: activityStats
+    });
+  } catch (error) {
+    console.error('Admin stats error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der Statistiken' });
+  }
+});
+
+// Admin audit log listing
+app.get('/api/admin/audit-log', requireAdmin, (req, res) => {
+  try {
+    let limit = parseInt(req.query.limit, 10);
+    if (!Number.isFinite(limit) || limit < 1) limit = 50;
+    if (limit > 500) limit = 500;
+
+    let offset = parseInt(req.query.offset, 10);
+    if (!Number.isFinite(offset) || offset < 0) offset = 0;
+
+    const db = getDatabase();
+
+    const rows = db.prepare(`
+      SELECT a.id, a.timestamp, a.user_id, u.username, a.action, a.target_user, a.details
+      FROM audit_log a
+      LEFT JOIN users u ON a.user_id = u.id
+      ORDER BY a.timestamp DESC
+      LIMIT ? OFFSET ?
+    `).all(limit, offset);
+
+    const total = db.prepare('SELECT COUNT(*) as count FROM audit_log').get().count;
+
+    const entries = rows.map(row => ({
+      id: row.id,
+      timestamp: row.timestamp,
+      userId: row.user_id,
+      username: row.username,
+      action: row.action,
+      targetUser: row.target_user,
+      details: row.details
+    }));
+
+    res.json({ entries, total });
+  } catch (error) {
+    console.error('Audit log error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden des Audit-Logs' });
+  }
+});
+
+// Bulk user actions: activate, deactivate, delete
+app.post('/api/admin/users/bulk', requireAdmin, (req, res) => {
+  try {
+    const { userIds, action } = req.body;
+
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return res.status(400).json({ error: 'Benutzer-IDs erforderlich' });
+    }
+
+    if (userIds.length > 500) {
+      return res.status(400).json({ error: 'Zu viele Benutzer-IDs' });
+    }
+
+    if (!['activate', 'deactivate', 'delete'].includes(action)) {
+      return res.status(400).json({ error: 'Ungültige Aktion' });
+    }
+
+    let affected = 0;
+    let skipped = 0;
+    const errors = [];
+
+    for (const userId of userIds) {
+      if (typeof userId !== 'string' || userId.length === 0) {
+        skipped++;
+        errors.push({ userId: String(userId), error: 'Ungültige Benutzer-ID' });
+        continue;
+      }
+
+      // Prevent self-harm on destructive actions
+      if ((action === 'deactivate' || action === 'delete') && userId === req.session.userId) {
+        skipped++;
+        errors.push({ userId, error: 'Sie können sich nicht selbst bearbeiten' });
+        continue;
+      }
+
+      try {
+        if (action === 'activate') {
+          updateUser(userId, { isActive: true }, req.session.userId);
+          logAudit(req.session.userId, 'BULK_USER_ACTIVATE', userId, 'Bulk activation');
+          affected++;
+        } else if (action === 'deactivate') {
+          updateUser(userId, { isActive: false }, req.session.userId);
+          logAudit(req.session.userId, 'BULK_USER_DEACTIVATE', userId, 'Bulk deactivation');
+          affected++;
+        } else if (action === 'delete') {
+          deleteUser(userId, req.session.userId);
+          logAudit(req.session.userId, 'BULK_USER_DELETE', userId, 'Bulk deletion');
+          affected++;
+        }
+      } catch (err) {
+        skipped++;
+        errors.push({ userId, error: err.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      affected,
+      skipped,
+      errors
+    });
+  } catch (error) {
+    console.error('Bulk user action error:', error);
+    res.status(500).json({ error: 'Fehler bei Massen-Aktion' });
   }
 });
 
