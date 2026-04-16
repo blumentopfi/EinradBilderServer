@@ -12,6 +12,10 @@ const faqLoading = document.getElementById('faq-loading');
 const faqError = document.getElementById('faq-error');
 const faqList = document.getElementById('faq-list');
 const noFaq = document.getElementById('no-faq');
+const faqNoResults = document.getElementById('faq-no-results');
+const faqSearchInput = document.getElementById('faq-search-input');
+const faqSearchClear = document.getElementById('faq-search-clear');
+const faqCategories = document.getElementById('faq-categories');
 
 const faqModal = document.getElementById('faq-modal');
 const faqForm = document.getElementById('faq-form');
@@ -20,6 +24,14 @@ const confirmModal = document.getElementById('confirm-modal');
 let currentUser = null;
 let allFaqItems = [];
 let editingFaqId = null;
+
+// Filter state
+let currentSearchQuery = '';
+let currentCategoryFilter = 'all';
+let expandedFaqIds = new Set();
+let searchDebounceTimer = null;
+let firstRenderDone = false;
+const FAQ_DEFAULT_CATEGORY = 'Allgemein';
 
 // Initialize
 checkAuth();
@@ -129,33 +141,140 @@ async function loadFaqItems() {
 
 function renderFaqItems() {
     faqList.innerHTML = '';
+    faqNoResults.classList.add('hidden');
 
     if (allFaqItems.length === 0) {
         noFaq.classList.remove('hidden');
+        faqCategories.classList.add('hidden');
         return;
     }
 
     noFaq.classList.add('hidden');
 
-    // Group by category
-    const grouped = {};
+    // Open first item by default on very first render (only if no search/filter active)
+    if (!firstRenderDone) {
+        if (allFaqItems.length > 0) {
+            expandedFaqIds.add(allFaqItems[0].id);
+        }
+        firstRenderDone = true;
+    }
+
+    // Render category tabs
+    renderCategoryTabs();
+
+    // Apply search + category filters
+    applyFilters();
+}
+
+function getUniqueCategories() {
+    const set = new Set();
     allFaqItems.forEach(item => {
-        const category = item.category || 'Allgemein';
+        if (item.category && item.category.trim() !== '') {
+            set.add(item.category.trim());
+        }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'de'));
+}
+
+function renderCategoryTabs() {
+    const categories = getUniqueCategories();
+
+    // Hide tabs row entirely if there are zero categories
+    if (categories.length === 0) {
+        faqCategories.classList.add('hidden');
+        faqCategories.innerHTML = '';
+        return;
+    }
+
+    faqCategories.classList.remove('hidden');
+    faqCategories.innerHTML = '';
+
+    // Reset filter if current selection no longer exists
+    if (currentCategoryFilter !== 'all' && !categories.includes(currentCategoryFilter)) {
+        currentCategoryFilter = 'all';
+    }
+
+    const tabs = [
+        { value: 'all', label: 'Alle' },
+        ...categories.map(c => ({ value: c, label: c }))
+    ];
+
+    tabs.forEach(tab => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'faq-tab';
+        btn.textContent = tab.label;
+        btn.setAttribute('role', 'tab');
+        btn.dataset.category = tab.value;
+        const isActive = currentCategoryFilter === tab.value;
+        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        if (isActive) btn.classList.add('active');
+        btn.addEventListener('click', () => {
+            currentCategoryFilter = tab.value;
+            // Update active state
+            faqCategories.querySelectorAll('.faq-tab').forEach(t => {
+                const active = t.dataset.category === currentCategoryFilter;
+                t.classList.toggle('active', active);
+                t.setAttribute('aria-selected', active ? 'true' : 'false');
+            });
+            applyFilters();
+        });
+        faqCategories.appendChild(btn);
+    });
+}
+
+function matchesSearch(item, query) {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    const question = (item.question || '').toLowerCase();
+    const answer = (item.answer || '').toLowerCase();
+    const category = (item.category || '').toLowerCase();
+    return question.includes(q) || answer.includes(q) || category.includes(q);
+}
+
+function matchesCategory(item) {
+    if (currentCategoryFilter === 'all') return true;
+    return (item.category || '') === currentCategoryFilter;
+}
+
+function applyFilters() {
+    faqList.innerHTML = '';
+
+    const filtered = allFaqItems.filter(item =>
+        matchesCategory(item) && matchesSearch(item, currentSearchQuery)
+    );
+
+    if (filtered.length === 0) {
+        faqNoResults.classList.remove('hidden');
+        return;
+    }
+
+    faqNoResults.classList.add('hidden');
+
+    // Group filtered items by category
+    const grouped = {};
+    filtered.forEach(item => {
+        const category = (item.category && item.category.trim() !== '')
+            ? item.category
+            : FAQ_DEFAULT_CATEGORY;
         if (!grouped[category]) {
             grouped[category] = [];
         }
         grouped[category].push(item);
     });
 
-    // Render each category
-    Object.keys(grouped).sort().forEach(category => {
+    Object.keys(grouped).sort((a, b) => a.localeCompare(b, 'de')).forEach(category => {
         const categoryDiv = document.createElement('div');
         categoryDiv.className = 'faq-category';
 
-        const categoryTitle = document.createElement('h2');
-        categoryTitle.className = 'faq-category-title';
-        categoryTitle.textContent = category;
-        categoryDiv.appendChild(categoryTitle);
+        // Only show category heading when "Alle" is selected and there are multiple categories
+        const uniqueCats = getUniqueCategories();
+        if (currentCategoryFilter === 'all' && uniqueCats.length > 0) {
+            const categoryTitle = document.createElement('h2');
+            categoryTitle.className = 'faq-category-title';
+            categoryTitle.textContent = category;
+            categoryDiv.appendChild(categoryTitle);
+        }
 
         grouped[category].forEach(item => {
             const itemDiv = createFaqItemElement(item);
@@ -169,29 +288,64 @@ function renderFaqItems() {
 function createFaqItemElement(item) {
     const div = document.createElement('div');
     div.className = 'faq-item';
+    const answerId = `faq-answer-${item.id}`;
+    const isExpanded = expandedFaqIds.has(item.id);
+    if (isExpanded) div.classList.add('expanded');
 
     const header = document.createElement('div');
     header.className = 'faq-item-header';
 
-    const question = document.createElement('h3');
+    // Question as a button for accessibility
+    const questionBtn = document.createElement('button');
+    questionBtn.type = 'button';
+    questionBtn.className = 'faq-question-btn';
+    questionBtn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+    questionBtn.setAttribute('aria-controls', answerId);
+
+    const question = document.createElement('span');
     question.className = 'faq-question';
     question.textContent = item.question;
-    header.appendChild(question);
+    questionBtn.appendChild(question);
 
-    // Add edit/delete buttons for admins
+    const chevron = document.createElement('span');
+    chevron.className = 'faq-chevron';
+    chevron.setAttribute('aria-hidden', 'true');
+    chevron.textContent = '▼';
+    questionBtn.appendChild(chevron);
+
+    questionBtn.addEventListener('click', () => toggleFaqItem(item.id, div, questionBtn));
+    // Enter/Space are handled natively on <button>, but keep for safety
+    questionBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleFaqItem(item.id, div, questionBtn);
+        }
+    });
+
+    header.appendChild(questionBtn);
+
+    // Add edit/delete buttons for admins (kept accessible regardless of collapsed state)
     if (currentUser && currentUser.role === 'admin') {
         const actions = document.createElement('div');
         actions.className = 'faq-actions';
 
         const editBtn = document.createElement('button');
+        editBtn.type = 'button';
         editBtn.className = 'faq-action-btn edit';
         editBtn.textContent = 'Bearbeiten';
-        editBtn.addEventListener('click', () => editFaqItem(item.id));
+        editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            editFaqItem(item.id);
+        });
 
         const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
         deleteBtn.className = 'faq-action-btn delete';
         deleteBtn.textContent = 'Löschen';
-        deleteBtn.addEventListener('click', () => deleteFaqItem(item.id));
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            deleteFaqItem(item.id);
+        });
 
         actions.appendChild(editBtn);
         actions.appendChild(deleteBtn);
@@ -200,12 +354,61 @@ function createFaqItemElement(item) {
 
     div.appendChild(header);
 
+    // Answer wrapper (for smooth grid animation)
+    const wrapper = document.createElement('div');
+    wrapper.className = 'faq-answer-wrapper';
+
+    const inner = document.createElement('div');
+    inner.className = 'faq-answer-inner';
+
     const answer = document.createElement('p');
     answer.className = 'faq-answer';
+    answer.id = answerId;
     answer.innerHTML = linkifyText(item.answer);
-    div.appendChild(answer);
+
+    inner.appendChild(answer);
+    wrapper.appendChild(inner);
+    div.appendChild(wrapper);
 
     return div;
+}
+
+function toggleFaqItem(itemId, itemDiv, btn) {
+    const isExpanded = itemDiv.classList.toggle('expanded');
+    if (isExpanded) {
+        expandedFaqIds.add(itemId);
+    } else {
+        expandedFaqIds.delete(itemId);
+    }
+    btn.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+}
+
+// Search handling (debounced ~200ms)
+if (faqSearchInput) {
+    faqSearchInput.addEventListener('input', () => {
+        const val = faqSearchInput.value;
+        if (val.length > 0) {
+            faqSearchClear.classList.remove('hidden');
+        } else {
+            faqSearchClear.classList.add('hidden');
+        }
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            currentSearchQuery = val.trim();
+            applyFilters();
+        }, 200);
+    });
+}
+
+if (faqSearchClear) {
+    faqSearchClear.addEventListener('click', () => {
+        faqSearchInput.value = '';
+        currentSearchQuery = '';
+        faqSearchClear.classList.add('hidden');
+        if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+        applyFilters();
+        faqSearchInput.focus();
+    });
 }
 
 // Create/Edit FAQ
