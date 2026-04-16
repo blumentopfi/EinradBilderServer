@@ -7,6 +7,15 @@ let allUsers = [];
 let currentUploadPath = '';
 let editingUserId = null;
 
+// Bulk selection state
+let selectedUserIds = new Set();
+
+// Audit log state
+let auditEntries = [];
+let auditTotal = 0;
+let auditOffset = 0;
+const AUDIT_PAGE_SIZE = 50;
+
 // DOM Elements
 const adminUserInfo = document.getElementById('admin-user-info');
 const adminUserMenuBtn = document.getElementById('admin-user-menu-btn');
@@ -67,15 +76,20 @@ async function checkAuth() {
         currentUser = data.user;
         adminUserInfo.textContent = `Angemeldet als: ${currentUser.displayName}`;
 
-        // Hide user management tab for uploaders
+        // Hide admin-only tabs for uploaders
         if (currentUser.role === 'uploader') {
-            const usersTab = document.querySelector('[data-tab="users"]');
-            if (usersTab) usersTab.style.display = 'none';
+            const adminOnlyTabs = ['dashboard', 'users', 'audit'];
+            adminOnlyTabs.forEach(name => {
+                const tab = document.querySelector(`[data-tab="${name}"]`);
+                if (tab) tab.style.display = 'none';
+            });
 
             // Switch to upload tab by default for uploaders
             switchTab('upload');
         } else {
-            // Load initial data for admins
+            // Admin: default tab is Dashboard
+            switchTab('dashboard');
+            loadDashboard();
             loadUsers();
         }
 
@@ -113,6 +127,11 @@ function switchTab(tabName) {
             content.classList.remove('active');
         }
     });
+
+    // Lazy-load tab data
+    if (tabName === 'audit' && auditEntries.length === 0) {
+        loadAuditLog(true);
+    }
 }
 
 // ===== HEADER ACTIONS =====
@@ -184,14 +203,26 @@ async function loadUsers() {
 function renderUsers() {
     usersTbody.innerHTML = '';
 
+    // Prune selections that reference users no longer present
+    const currentIds = new Set(allUsers.map(u => u.id));
+    selectedUserIds.forEach(id => {
+        if (!currentIds.has(id)) selectedUserIds.delete(id);
+    });
+
     if (allUsers.length === 0) {
-        usersTbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 40px; color: #666;">Keine Benutzer gefunden</td></tr>';
+        usersTbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #666;">Keine Benutzer gefunden</td></tr>';
+        updateBulkUI();
         return;
     }
 
     allUsers.forEach(user => {
         const row = document.createElement('tr');
+        const isChecked = selectedUserIds.has(user.id);
+        if (isChecked) row.classList.add('row-selected');
         row.innerHTML = `
+            <td class="col-checkbox">
+                <input type="checkbox" class="user-select-checkbox" data-user-id="${user.id}" ${isChecked ? 'checked' : ''} aria-label="Benutzer ${escapeHtml(user.username)} auswählen">
+            </td>
             <td>${escapeHtml(user.username)}</td>
             <td>${escapeHtml(user.displayName)}</td>
             <td>
@@ -219,13 +250,26 @@ function renderUsers() {
         const editBtn = row.querySelector('.edit-user-btn');
         const resetBtn = row.querySelector('.reset-password-btn');
         const deleteBtn = row.querySelector('.delete-user-btn');
+        const checkbox = row.querySelector('.user-select-checkbox');
 
         editBtn.addEventListener('click', () => editUser(user.id));
         resetBtn.addEventListener('click', () => resetPassword(user.id));
         deleteBtn.addEventListener('click', () => deleteUser(user.id, user.username));
+        checkbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                selectedUserIds.add(user.id);
+                row.classList.add('row-selected');
+            } else {
+                selectedUserIds.delete(user.id);
+                row.classList.remove('row-selected');
+            }
+            updateBulkUI();
+        });
 
         usersTbody.appendChild(row);
     });
+
+    updateBulkUI();
 }
 
 createUserBtn.addEventListener('click', () => {
@@ -730,6 +774,421 @@ function showConfirm(title, message, onConfirm) {
 function showSuccess(message) {
     // Simple alert for now - could be enhanced with a toast notification
     alert(message);
+}
+
+// ===== DASHBOARD =====
+
+const dashboardLoading = document.getElementById('dashboard-loading');
+const dashboardError = document.getElementById('dashboard-error');
+const reloadDashboardBtn = document.getElementById('reload-dashboard-btn');
+
+if (reloadDashboardBtn) {
+    reloadDashboardBtn.addEventListener('click', () => loadDashboard());
+}
+
+async function loadDashboard() {
+    if (!dashboardLoading) return;
+    dashboardLoading.classList.remove('hidden');
+    dashboardError.textContent = '';
+
+    try {
+        const response = await fetch('/api/admin/stats');
+        const data = await response.json();
+
+        if (!response.ok) {
+            dashboardError.textContent = data.error || 'Fehler beim Laden der Statistiken';
+            return;
+        }
+
+        renderDashboard(data);
+    } catch (error) {
+        console.error('Load dashboard error:', error);
+        dashboardError.textContent = 'Verbindungsfehler beim Laden der Statistiken';
+    } finally {
+        dashboardLoading.classList.add('hidden');
+    }
+}
+
+function renderDashboard(stats) {
+    const u = stats.users || {};
+    setText('stat-users-total', u.total);
+    setText('stat-users-admin', u.admin);
+    setText('stat-users-uploader', u.uploader);
+    setText('stat-users-user', u.user);
+    setText('stat-users-active7', u.activeLast7Days);
+
+    const f = stats.faq || {};
+    setText('stat-faq-total', f.total);
+    setText('stat-faq-total-2', f.total);
+    setText('stat-faq-categories', f.categories);
+
+    const m = stats.media || {};
+    setText('stat-media-files', m.totalFiles);
+    setText('stat-media-files-2', m.totalFiles);
+    setText('stat-media-folders', m.totalFolders);
+    setText('stat-media-storage', formatBytes(m.storageBytes));
+
+    const a = stats.activity || {};
+    setText('stat-media-uploads7', a.uploadsLast7Days);
+
+    const fav = stats.favorites || {};
+    setText('stat-favorites-total', fav.total);
+    setText('stat-favorites-total-2', fav.total);
+}
+
+function setText(id, value) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (value === undefined || value === null) {
+        el.textContent = '–';
+    } else {
+        el.textContent = value;
+    }
+}
+
+function formatBytes(bytes) {
+    if (bytes === undefined || bytes === null) return '–';
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.min(Math.floor(Math.log(bytes) / Math.log(k)), sizes.length - 1);
+    return (bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 2) + ' ' + sizes[i];
+}
+
+// ===== BULK USER ACTIONS =====
+
+const selectAllCheckbox = document.getElementById('users-select-all');
+const bulkActionBar = document.getElementById('bulk-action-bar');
+const bulkSelectedCount = document.getElementById('bulk-selected-count');
+const bulkActivateBtn = document.getElementById('bulk-activate-btn');
+const bulkDeactivateBtn = document.getElementById('bulk-deactivate-btn');
+const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+const bulkClearBtn = document.getElementById('bulk-clear-btn');
+const bulkMessage = document.getElementById('bulk-message');
+
+if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        // Only operate on visible checkboxes
+        const checkboxes = usersTbody.querySelectorAll('.user-select-checkbox');
+        checkboxes.forEach(cb => {
+            const userId = cb.dataset.userId;
+            cb.checked = checked;
+            const row = cb.closest('tr');
+            if (checked) {
+                selectedUserIds.add(userId);
+                if (row) row.classList.add('row-selected');
+            } else {
+                selectedUserIds.delete(userId);
+                if (row) row.classList.remove('row-selected');
+            }
+        });
+        updateBulkUI();
+    });
+}
+
+if (bulkClearBtn) {
+    bulkClearBtn.addEventListener('click', () => {
+        selectedUserIds.clear();
+        usersTbody.querySelectorAll('.user-select-checkbox').forEach(cb => {
+            cb.checked = false;
+            const row = cb.closest('tr');
+            if (row) row.classList.remove('row-selected');
+        });
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+        updateBulkUI();
+    });
+}
+
+if (bulkActivateBtn) bulkActivateBtn.addEventListener('click', () => bulkAction('activate'));
+if (bulkDeactivateBtn) bulkDeactivateBtn.addEventListener('click', () => bulkAction('deactivate'));
+if (bulkDeleteBtn) bulkDeleteBtn.addEventListener('click', () => bulkAction('delete'));
+
+function updateBulkUI() {
+    const count = selectedUserIds.size;
+    if (bulkSelectedCount) bulkSelectedCount.textContent = count;
+    if (bulkActionBar) {
+        if (count > 0) bulkActionBar.classList.remove('hidden');
+        else bulkActionBar.classList.add('hidden');
+    }
+
+    // Sync header checkbox state
+    if (selectAllCheckbox) {
+        const checkboxes = usersTbody.querySelectorAll('.user-select-checkbox');
+        const total = checkboxes.length;
+        const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+        if (total === 0 || checkedCount === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        } else if (checkedCount === total) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
+}
+
+function bulkAction(action) {
+    const ids = Array.from(selectedUserIds);
+    if (ids.length === 0) return;
+
+    // Gather affected usernames for the confirmation
+    const affectedUsers = allUsers.filter(u => selectedUserIds.has(u.id));
+    const namesList = affectedUsers.map(u => `• ${u.username}`).join('\n');
+
+    const actionLabels = {
+        activate: 'aktivieren',
+        deactivate: 'deaktivieren',
+        delete: 'löschen'
+    };
+    const actionTitle = {
+        activate: 'Benutzer aktivieren',
+        deactivate: 'Benutzer deaktivieren',
+        delete: 'Benutzer löschen'
+    };
+
+    const verb = actionLabels[action] || action;
+    const title = actionTitle[action] || 'Bulk-Aktion';
+    const warn = action === 'delete'
+        ? '\n\nDiese Aktion kann nicht rückgängig gemacht werden.'
+        : '';
+    const message = `Möchten Sie die folgenden ${ids.length} Benutzer wirklich ${verb}?\n\n${namesList}${warn}`;
+
+    showConfirm(title, message, async () => {
+        try {
+            const response = await fetch('/api/admin/users/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userIds: ids, action })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                showBulkMessage(data.error || 'Fehler bei der Bulk-Aktion', 'error');
+                return;
+            }
+
+            const affected = data.affected ?? 0;
+            const skipped = data.skipped ?? 0;
+            let msg = `${affected} erfolgreich, ${skipped} übersprungen`;
+            if (Array.isArray(data.errors) && data.errors.length > 0) {
+                const errSummary = data.errors
+                    .slice(0, 5)
+                    .map(e => typeof e === 'string' ? e : (e.message || e.error || JSON.stringify(e)))
+                    .join('; ');
+                msg += ` — Fehler: ${errSummary}`;
+                if (data.errors.length > 5) msg += ` … (+${data.errors.length - 5} weitere)`;
+            }
+
+            showBulkMessage(msg, affected > 0 ? 'success' : 'warning');
+
+            // Reset selection and refresh
+            selectedUserIds.clear();
+            if (selectAllCheckbox) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+            loadUsers();
+        } catch (error) {
+            console.error('Bulk action error:', error);
+            showBulkMessage('Verbindungsfehler bei der Bulk-Aktion', 'error');
+        }
+    });
+}
+
+function showBulkMessage(text, variant = 'success') {
+    if (!bulkMessage) {
+        alert(text);
+        return;
+    }
+    bulkMessage.textContent = text;
+    bulkMessage.classList.remove('hidden', 'success', 'warning', 'error');
+    bulkMessage.classList.add(variant);
+    // Auto-hide after 8s
+    clearTimeout(showBulkMessage._t);
+    showBulkMessage._t = setTimeout(() => {
+        bulkMessage.classList.add('hidden');
+    }, 8000);
+}
+
+// ===== AUDIT LOG =====
+
+const auditLoading = document.getElementById('audit-loading');
+const auditError = document.getElementById('audit-error');
+const auditTbody = document.getElementById('audit-tbody');
+const auditCounter = document.getElementById('audit-counter');
+const auditLoadMoreBtn = document.getElementById('audit-load-more-btn');
+const reloadAuditBtn = document.getElementById('reload-audit-btn');
+
+if (reloadAuditBtn) {
+    reloadAuditBtn.addEventListener('click', () => loadAuditLog(true));
+}
+if (auditLoadMoreBtn) {
+    auditLoadMoreBtn.addEventListener('click', () => loadAuditLog(false));
+}
+
+async function loadAuditLog(reset = false) {
+    if (!auditTbody) return;
+
+    if (reset) {
+        auditEntries = [];
+        auditOffset = 0;
+        auditTbody.innerHTML = '';
+    }
+
+    if (auditLoading) auditLoading.classList.remove('hidden');
+    if (auditError) auditError.textContent = '';
+
+    try {
+        const url = `/api/admin/audit-log?limit=${AUDIT_PAGE_SIZE}&offset=${auditOffset}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!response.ok) {
+            auditError.textContent = data.error || 'Fehler beim Laden des Audit-Logs';
+            return;
+        }
+
+        const entries = Array.isArray(data.entries) ? data.entries : [];
+        auditTotal = Number.isFinite(data.total) ? data.total : entries.length + auditOffset;
+        auditEntries = auditEntries.concat(entries);
+        auditOffset += entries.length;
+
+        entries.forEach(entry => auditTbody.appendChild(buildAuditRow(entry)));
+
+        updateAuditFooter();
+    } catch (error) {
+        console.error('Load audit log error:', error);
+        if (auditError) auditError.textContent = 'Verbindungsfehler beim Laden des Audit-Logs';
+    } finally {
+        if (auditLoading) auditLoading.classList.add('hidden');
+    }
+}
+
+function updateAuditFooter() {
+    if (auditCounter) {
+        auditCounter.textContent = `${auditEntries.length} von ${auditTotal} Einträgen`;
+    }
+    if (auditLoadMoreBtn) {
+        if (auditEntries.length < auditTotal) {
+            auditLoadMoreBtn.classList.remove('hidden');
+        } else {
+            auditLoadMoreBtn.classList.add('hidden');
+        }
+    }
+}
+
+function buildAuditRow(entry) {
+    const row = document.createElement('tr');
+
+    const timeCell = document.createElement('td');
+    timeCell.className = 'col-time';
+    timeCell.textContent = entry.timestamp
+        ? new Date(entry.timestamp).toLocaleString('de-DE')
+        : '–';
+
+    const userCell = document.createElement('td');
+    userCell.className = 'col-user';
+    userCell.textContent = entry.username || entry.userId || '–';
+
+    const actionCell = document.createElement('td');
+    actionCell.className = 'col-action';
+    const badge = document.createElement('span');
+    badge.className = 'audit-badge ' + auditBadgeClass(entry.action);
+    badge.textContent = entry.action || '–';
+    actionCell.appendChild(badge);
+
+    const targetCell = document.createElement('td');
+    targetCell.className = 'col-target';
+    targetCell.textContent = entry.targetUser || '–';
+
+    const detailsCell = document.createElement('td');
+    detailsCell.className = 'col-details';
+    detailsCell.appendChild(renderAuditDetails(entry.details));
+
+    row.appendChild(timeCell);
+    row.appendChild(userCell);
+    row.appendChild(actionCell);
+    row.appendChild(targetCell);
+    row.appendChild(detailsCell);
+    return row;
+}
+
+function auditBadgeClass(action) {
+    if (!action) return 'audit-badge-default';
+    const a = String(action).toUpperCase();
+    if (a.includes('LOGIN')) return 'audit-badge-login';
+    if (a.includes('LOGOUT')) return 'audit-badge-logout';
+    if (a.includes('DELETE') || a.includes('DELETED')) return 'audit-badge-delete';
+    if (a.includes('CREATE') || a.includes('CREATED')) return 'audit-badge-create';
+    if (a.includes('UPDATE') || a.includes('UPDATED') || a.includes('EDIT')) return 'audit-badge-update';
+    if (a.includes('ACTIVATE') || a.includes('ACTIVATED')) return 'audit-badge-activate';
+    if (a.includes('DEACTIVATE') || a.includes('DEACTIVATED')) return 'audit-badge-deactivate';
+    if (a.includes('UPLOAD')) return 'audit-badge-upload';
+    if (a.includes('PASSWORD')) return 'audit-badge-password';
+    return 'audit-badge-default';
+}
+
+function renderAuditDetails(details) {
+    const wrap = document.createElement('div');
+    wrap.className = 'audit-details-wrap';
+
+    if (details === undefined || details === null || details === '') {
+        wrap.textContent = '–';
+        return wrap;
+    }
+
+    let text;
+    if (typeof details === 'string') {
+        text = details;
+    } else {
+        try {
+            text = JSON.stringify(details);
+        } catch {
+            text = String(details);
+        }
+    }
+
+    const MAX = 80;
+    if (text.length <= MAX) {
+        wrap.textContent = text;
+        return wrap;
+    }
+
+    const truncated = text.slice(0, MAX) + '…';
+    const short = document.createElement('span');
+    short.className = 'audit-details-short';
+    short.textContent = truncated;
+
+    const full = document.createElement('span');
+    full.className = 'audit-details-full hidden';
+    full.textContent = text;
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'audit-details-toggle';
+    toggle.textContent = 'Mehr';
+    toggle.addEventListener('click', () => {
+        const expanded = !full.classList.contains('hidden');
+        if (expanded) {
+            full.classList.add('hidden');
+            short.classList.remove('hidden');
+            toggle.textContent = 'Mehr';
+        } else {
+            full.classList.remove('hidden');
+            short.classList.add('hidden');
+            toggle.textContent = 'Weniger';
+        }
+    });
+
+    wrap.appendChild(short);
+    wrap.appendChild(full);
+    wrap.appendChild(document.createTextNode(' '));
+    wrap.appendChild(toggle);
+    return wrap;
 }
 
 // ===== UTILITY FUNCTIONS =====
