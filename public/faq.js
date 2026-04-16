@@ -356,10 +356,10 @@ function createFaqItemElement(item) {
     const inner = document.createElement('div');
     inner.className = 'faq-answer-inner';
 
-    const answer = document.createElement('p');
+    const answer = document.createElement('div');
     answer.className = 'faq-answer';
     answer.id = answerId;
-    answer.innerHTML = linkifyText(item.answer);
+    answer.innerHTML = renderMarkdown(item.answer);
 
     inner.appendChild(answer);
     wrapper.appendChild(inner);
@@ -705,16 +705,165 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Convert URLs in text to clickable links
-function linkifyText(text) {
-    // First escape HTML to prevent XSS
-    const escaped = escapeHtml(text);
+// Validate that a URL is safe (only http/https; rejects javascript:, data:, etc.)
+function isSafeUrl(url) {
+    const trimmed = String(url).trim();
+    // Disallow control characters (including newlines, tabs) in URLs
+    if (/[\u0000-\u001F\u007F]/.test(trimmed)) return false;
+    // Must start with http:// or https:// (case-insensitive)
+    return /^https?:\/\//i.test(trimmed);
+}
 
-    // Regex to match URLs
-    const urlRegex = /(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/g;
+// Render a restricted, safe subset of Markdown to HTML.
+// Strategy: HTML-escape ALL input first, then operate on the escaped string.
+// Because raw user input can never produce raw "<" or ">" after escaping,
+// every "<"/">" we introduce later is guaranteed to be structural HTML we
+// produced ourselves — making this safe against XSS (including payloads like
+// "<script>alert(1)</script>", which become literal "&lt;script&gt;..." text).
+//
+// Supported:
+//   **bold**, *italic*, `code`
+//   [text](url)  -- only http/https URLs; other schemes are rendered as text
+//   - / * list items  (unordered)
+//   1. 2. 3. list items  (ordered)
+//   ---  horizontal rule (alone on line)
+//   ## / ###  headings
+//   blank line = paragraph break, single newline inside paragraph = <br>
+function renderMarkdown(text) {
+    if (text === null || text === undefined) return '';
+    const src = String(text);
 
-    // Replace URLs with anchor tags
-    return escaped.replace(urlRegex, (url) => {
-        return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+    // STEP 1: HTML-escape everything. From here on we only operate on the
+    // escaped string, so user input can never produce a raw tag.
+    let escaped = escapeHtml(src);
+
+    // STEP 2: Extract inline code spans (`code`) first so their contents
+    // don't get further parsed for bold/italic/links. Replace with placeholders.
+    const codeSpans = [];
+    escaped = escaped.replace(/`([^`\n]+)`/g, (_m, code) => {
+        codeSpans.push(code);
+        return `\u0000CODE${codeSpans.length - 1}\u0000`;
     });
+
+    // STEP 3: Split into lines for block-level parsing.
+    // Normalize line endings.
+    const lines = escaped.replace(/\r\n?/g, '\n').split('\n');
+
+    const out = [];
+    let i = 0;
+
+    // Helper: apply inline transformations (bold, italic, links) to a line.
+    // Runs AFTER HTML-escaping, so matches only against safe text.
+    function renderInline(line) {
+        let s = line;
+
+        // Links: [text](url) — escaped chars in URL are fine; we validate scheme.
+        // The URL may contain characters like "&amp;" (from escaping "&") which
+        // is fine because we're inserting it back as an attribute value where
+        // "&amp;" is the correct representation.
+        s = s.replace(/\[([^\]\n]+)\]\(([^)\n\s]+)\)/g, (match, linkText, rawUrl) => {
+            // rawUrl is already HTML-escaped (step 1), so it is safe to insert
+            // directly as an attribute value (contained " would already be
+            // &quot;, & would already be &amp;, etc.). Do NOT re-escape.
+            // Scheme check doesn't need unescaping — "http"/"https" don't contain
+            // any escapable characters.
+            if (!isSafeUrl(rawUrl)) {
+                // Unsafe scheme — render the original (escaped) markdown as text.
+                return match;
+            }
+            // linkText was already escaped in step 1.
+            return `<a href="${rawUrl}" rel="noopener noreferrer" target="_blank">${linkText}</a>`;
+        });
+
+        // Bold: **text**  (non-greedy, must not span empty)
+        s = s.replace(/\*\*([^\*\n]+?)\*\*/g, '<strong>$1</strong>');
+
+        // Italic: *text*  (single star; avoid matching leftover ** by requiring
+        // non-star on both sides of the content).
+        s = s.replace(/(^|[^*])\*([^*\n]+?)\*(?!\*)/g, '$1<em>$2</em>');
+
+        return s;
+    }
+
+    function flushInlineLine(line) {
+        return renderInline(line);
+    }
+
+    while (i < lines.length) {
+        const line = lines[i];
+        const trimmed = line.trim();
+
+        // Blank line — skip
+        if (trimmed === '') {
+            i++;
+            continue;
+        }
+
+        // Horizontal rule: exactly --- (or more dashes) on its own line
+        if (/^-{3,}$/.test(trimmed)) {
+            out.push('<hr>');
+            i++;
+            continue;
+        }
+
+        // Heading: ### or ## (not single #)
+        let m = /^(#{2,3})\s+(.+)$/.exec(trimmed);
+        if (m) {
+            const level = m[1].length; // 2 or 3
+            out.push(`<h${level}>${renderInline(m[2])}</h${level}>`);
+            i++;
+            continue;
+        }
+
+        // Unordered list: consecutive lines starting with "- " or "* "
+        if (/^[-*]\s+/.test(trimmed)) {
+            const items = [];
+            while (i < lines.length && /^[-*]\s+/.test(lines[i].trim())) {
+                const itemText = lines[i].trim().replace(/^[-*]\s+/, '');
+                items.push(`<li>${renderInline(itemText)}</li>`);
+                i++;
+            }
+            out.push(`<ul>${items.join('')}</ul>`);
+            continue;
+        }
+
+        // Ordered list: consecutive lines starting with "N. "
+        if (/^\d+\.\s+/.test(trimmed)) {
+            const items = [];
+            while (i < lines.length && /^\d+\.\s+/.test(lines[i].trim())) {
+                const itemText = lines[i].trim().replace(/^\d+\.\s+/, '');
+                items.push(`<li>${renderInline(itemText)}</li>`);
+                i++;
+            }
+            out.push(`<ol>${items.join('')}</ol>`);
+            continue;
+        }
+
+        // Paragraph: gather consecutive non-blank, non-block lines.
+        // Single newline inside a paragraph becomes <br>.
+        const paraLines = [];
+        while (i < lines.length) {
+            const l = lines[i];
+            const t = l.trim();
+            if (t === '') break;
+            if (/^-{3,}$/.test(t)) break;
+            if (/^(#{2,3})\s+/.test(t)) break;
+            if (/^[-*]\s+/.test(t)) break;
+            if (/^\d+\.\s+/.test(t)) break;
+            paraLines.push(flushInlineLine(l));
+            i++;
+        }
+        out.push(`<p>${paraLines.join('<br>')}</p>`);
+    }
+
+    let html = out.join('');
+
+    // STEP 4: Restore code spans (escape their contents - they were already
+    // escaped in step 1, so we can insert them as-is).
+    html = html.replace(/\u0000CODE(\d+)\u0000/g, (_m, idx) => {
+        const code = codeSpans[Number(idx)];
+        return `<code>${code}</code>`;
+    });
+
+    return html;
 }
