@@ -45,9 +45,29 @@
                 <h2>Häufig gestellte Fragen</h2>
                 <button id="create-faq-btn" class="btn-primary hidden">+ Neue Frage</button>
             </div>
+
+            <div class="faq-search-wrapper">
+                <label for="faq-search-input" class="visually-hidden">Fragen durchsuchen</label>
+                <span class="faq-search-icon" aria-hidden="true">🔍</span>
+                <input type="search"
+                       id="faq-search-input"
+                       class="faq-search-input"
+                       placeholder="Fragen durchsuchen..."
+                       autocomplete="off">
+                <button type="button"
+                        id="faq-search-clear"
+                        class="faq-search-clear hidden"
+                        aria-label="Suche zurücksetzen">&times;</button>
+            </div>
+
+            <div id="faq-categories" class="faq-categories hidden" role="tablist" aria-label="FAQ-Kategorien"></div>
+
             <div id="faq-loading" class="loading hidden">Lade FAQ...</div>
             <div id="faq-error" class="error-message"></div>
             <div id="faq-list" class="faq-list"></div>
+            <div id="faq-no-results" class="no-faq hidden">
+                <p>Keine Ergebnisse</p>
+            </div>
             <div id="no-faq" class="no-faq hidden">
                 <p>Keine FAQ-Einträge vorhanden.</p>
             </div>
