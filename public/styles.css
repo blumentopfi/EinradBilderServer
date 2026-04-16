@@ -8,6 +8,11 @@
     --color-border: #ddd;
     --color-error: #e74c3c;
     --color-success: #27ae60;
+    --color-favorite: #ff6b35;
+    --color-favorite-idle: #ffffff;
+    --favorite-btn-bg: rgba(0, 0, 0, 0.45);
+    --favorite-btn-bg-active: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    --favorite-btn-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 
     /* Spacing */
     --space-xs: 5px;
@@ -717,6 +722,136 @@ header h1 {
     opacity: 1;
 }
 
+/* Favorite (star) button — top-left of image-card */
+.favorite-btn {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 0;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    background: var(--favorite-btn-bg);
+    color: var(--color-favorite-idle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 11;
+    box-shadow: var(--favorite-btn-shadow);
+    transition:
+        background var(--transition-fast),
+        color var(--transition-fast),
+        transform var(--transition-fast),
+        border-color var(--transition-fast);
+    font-size: 20px;
+    line-height: 1;
+}
+
+.favorite-btn .favorite-icon {
+    display: block;
+    font-size: 20px;
+    line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+.favorite-btn:hover {
+    transform: scale(1.08);
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.favorite-btn.is-favorite {
+    background: var(--favorite-btn-bg-active);
+    color: #fff;
+    border-color: #fff;
+}
+
+.favorite-btn.is-favorite .favorite-icon {
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+.favorite-btn:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: 2px;
+}
+
+/* Pulse animation on click */
+@keyframes favorite-pulse {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.25); }
+    100% { transform: scale(1); }
+}
+
+.favorite-btn.pulse {
+    animation: favorite-pulse 0.35s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .favorite-btn.pulse {
+        animation: none;
+    }
+    .favorite-btn:hover {
+        transform: none;
+    }
+}
+
+/* Type filter (Alle / Ordner / Bilder / Videos / Favoriten) */
+.type-filter {
+    display: inline-flex;
+    gap: 4px;
+    padding: 4px;
+    background: rgba(255, 107, 53, 0.08);
+    border: 1px solid rgba(255, 107, 53, 0.2);
+    border-radius: 999px;
+    flex-wrap: wrap;
+}
+
+.type-filter-btn {
+    background: transparent;
+    border: none;
+    padding: 6px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.type-filter-btn:hover {
+    color: var(--color-primary);
+    background: rgba(255, 107, 53, 0.1);
+}
+
+.type-filter-btn.active {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.35);
+}
+
+.type-filter-btn.favorites-filter-btn .star-icon {
+    margin-right: 2px;
+    color: var(--color-primary);
+}
+
+.type-filter-btn.favorites-filter-btn.active .star-icon {
+    color: #fff;
+}
+
+/* Empty state (filters-aware) */
+.gallery p.empty-state {
+    padding: 40px 20px;
+    font-size: 16px;
+}
+
+.gallery p.empty-state::before {
+    display: none;
+}
+
 .image-name {
     padding: 18px;
     font-size: 14px;
@@ -950,6 +1085,32 @@ header h1 {
         height: 20px;
         top: 6px;
         right: 6px;
+    }
+
+    /* Keep favorite button tap-friendly on mobile */
+    .favorite-btn {
+        top: 8px;
+        left: 8px;
+        width: 34px;
+        height: 34px;
+        min-width: 32px;
+        min-height: 32px;
+    }
+
+    .favorite-btn .favorite-icon {
+        font-size: 18px;
+    }
+
+    .type-filter {
+        width: 100%;
+        justify-content: flex-start;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        flex-wrap: nowrap;
+    }
+
+    .type-filter-btn {
+        white-space: nowrap;
     }
 
     .login-container {

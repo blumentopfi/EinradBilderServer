@@ -57,6 +57,13 @@
             <div class="gallery-toolbar" role="toolbar" aria-label="Galerie-Werkzeuge">
                 <div class="toolbar-left">
                     <span id="selected-count" class="selected-count" aria-live="polite">0 ausgewählt</span>
+                    <div class="type-filter" role="group" aria-label="Ansicht filtern">
+                        <button type="button" class="type-filter-btn active" data-filter="all" aria-pressed="true">Alle</button>
+                        <button type="button" class="type-filter-btn" data-filter="folders" aria-pressed="false">Ordner</button>
+                        <button type="button" class="type-filter-btn" data-filter="images" aria-pressed="false">Bilder</button>
+                        <button type="button" class="type-filter-btn" data-filter="videos" aria-pressed="false">Videos</button>
+                        <button type="button" class="type-filter-btn favorites-filter-btn" data-filter="favorites" aria-pressed="false" aria-label="Nur Favoriten anzeigen"><span class="star-icon" aria-hidden="true">★</span> Favoriten</button>
+                    </div>
                 </div>
                 <div class="toolbar-right">
                     <button id="download-btn" class="btn-primary" disabled aria-label="Ausgewählte Bilder herunterladen">Ausgewählte herunterladen</button>

@@ -37,6 +37,8 @@ let currentPath = '';
 let selectedImages = new Set();
 let currentPreviewIndex = -1;
 let currentUser = null;
+let favorites = new Set();
+let typeFilter = 'all'; // 'all' | 'folders' | 'images' | 'videos' | 'favorites'
 
 // DOM elements
 const loginScreen = document.getElementById('login-screen');
@@ -96,6 +98,40 @@ function showLogin() {
     currentUser = null;
 }
 
+// Favorites API
+async function loadFavorites() {
+    try {
+        const response = await fetch('/api/favorites');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        favorites = new Set(Array.isArray(data.favorites) ? data.favorites : []);
+        log('Loaded favorites:', favorites.size);
+    } catch (error) {
+        log('Failed to load favorites:', error);
+        favorites = new Set();
+    }
+}
+
+async function addFavorite(path) {
+    const response = await fetch('/api/favorites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+}
+
+async function removeFavorite(path) {
+    const response = await fetch('/api/favorites', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path })
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return response.json();
+}
+
 function showGallery() {
     log('showGallery called');
     loginScreen.classList.add('hidden');
@@ -124,7 +160,8 @@ function showGallery() {
         window.history.replaceState({}, '', '/');
     }
 
-    loadImages();
+    // Load favorites (non-blocking for rest of UI) then load images
+    loadFavorites().finally(() => loadImages());
 }
 
 // Login handling
@@ -253,6 +290,8 @@ logoutBtn.addEventListener('click', async () => {
     try {
         await fetch('/logout', { method: 'POST' });
         selectedImages.clear();
+        favorites.clear();
+        typeFilter = 'all';
         images = [];
         currentUser = null;
         gallery.innerHTML = '';
@@ -286,6 +325,20 @@ async function loadImages(path = '') {
     }
 }
 
+// Filter predicates
+function matchesFilters(item, kind) {
+    // kind: 'folder' | 'image' | 'video'
+    if (typeFilter === 'all') return true;
+    if (typeFilter === 'folders') return kind === 'folder';
+    if (typeFilter === 'images') return kind === 'image';
+    if (typeFilter === 'videos') return kind === 'video';
+    if (typeFilter === 'favorites') {
+        // Only files can be favorites, not folders
+        return kind !== 'folder' && favorites.has(item.path);
+    }
+    return true;
+}
+
 // Render gallery
 function renderGallery() {
     gallery.innerHTML = '';
@@ -293,29 +346,46 @@ function renderGallery() {
     // Render breadcrumb
     renderBreadcrumb();
 
-    // Show back button if not in root
+    // Show back button if not in root (always visible regardless of filter)
     if (currentPath) {
         const backCard = createBackButton();
         gallery.appendChild(backCard);
     }
 
-    // Render folders
-    folders.forEach(folder => {
+    // Filter folders (hidden in favorites filter mode)
+    const visibleFolders = folders.filter(folder => matchesFilters(folder, 'folder'));
+    visibleFolders.forEach(folder => {
         const card = createFolderCard(folder);
         gallery.appendChild(card);
     });
 
-    // Render files
-    images.forEach((fileObj, index) => {
-        const card = createMediaCard(fileObj, index);
+    // Filter files by type and (if favorites filter) favorites membership
+    const visibleImages = images.filter(fileObj => matchesFilters(fileObj, fileObj.type));
+    visibleImages.forEach((fileObj) => {
+        // Use original index from images array so preview navigation still works
+        const originalIndex = images.indexOf(fileObj);
+        const card = createMediaCard(fileObj, originalIndex);
         gallery.appendChild(card);
     });
 
-    // Show message only if nothing to display (no folders, no files, and not in a subfolder with back button)
-    if (folders.length === 0 && images.length === 0 && !currentPath) {
-        const message = document.createElement('p');
-        message.textContent = 'Keine Medien im Verzeichnis gefunden';
-        gallery.appendChild(message);
+    // Empty state messaging
+    const nothingVisible = visibleFolders.length === 0 && visibleImages.length === 0;
+    if (nothingVisible) {
+        if (typeFilter === 'favorites') {
+            const message = document.createElement('p');
+            message.className = 'empty-state';
+            message.textContent = 'Keine Favoriten in diesem Ordner';
+            gallery.appendChild(message);
+        } else if (folders.length === 0 && images.length === 0 && !currentPath) {
+            const message = document.createElement('p');
+            message.textContent = 'Keine Medien im Verzeichnis gefunden';
+            gallery.appendChild(message);
+        } else if (typeFilter !== 'all' && !currentPath) {
+            const message = document.createElement('p');
+            message.className = 'empty-state';
+            message.textContent = 'Keine Inhalte für diesen Filter';
+            gallery.appendChild(message);
+        }
     }
 
     updateSelectedCount();
@@ -561,17 +631,42 @@ function createMediaCard(fileObj, index) {
     const checkbox = document.createElement('div');
     checkbox.className = 'checkbox-overlay';
 
+    // Favorite star (top-left)
+    const favBtn = document.createElement('button');
+    favBtn.type = 'button';
+    favBtn.className = 'favorite-btn';
+    const isFav = favorites.has(fileObj.path);
+    favBtn.classList.toggle('is-favorite', isFav);
+    favBtn.setAttribute('aria-pressed', isFav ? 'true' : 'false');
+    favBtn.setAttribute('aria-label', isFav ? 'Favorit entfernen' : 'Als Favorit markieren');
+    favBtn.dataset.path = fileObj.path;
+    favBtn.innerHTML = `<span class="favorite-icon" aria-hidden="true">${isFav ? '★' : '☆'}</span>`;
+    favBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        toggleFavorite(fileObj.path, favBtn, card);
+    });
+    // Prevent star key activation from bubbling to card
+    favBtn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.stopPropagation();
+        }
+    });
+
     const nameDiv = document.createElement('div');
     nameDiv.className = 'image-name';
     nameDiv.textContent = fileObj.name;
 
     wrapper.appendChild(mediaElement);
+    wrapper.appendChild(favBtn);
     wrapper.appendChild(checkbox);
     card.appendChild(wrapper);
     card.appendChild(nameDiv);
 
     // Click on card to toggle selection
     card.addEventListener('click', (e) => {
+        // Ignore clicks that originated on the favorite button
+        if (e.target.closest('.favorite-btn')) return;
         if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.classList.contains('play-icon')) {
             // Click on media opens preview
             openPreview(index);
@@ -587,7 +682,62 @@ function createMediaCard(fileObj, index) {
         toggleSelection(fileObj.path, card);
     });
 
+    // Reflect selected state (useful when re-rendering with filters)
+    if (selectedImages.has(fileObj.path)) {
+        card.classList.add('selected');
+    }
+
     return card;
+}
+
+// Toggle favorite (optimistic update, revert on error)
+async function toggleFavorite(path, btn, card) {
+    const wasFavorite = favorites.has(path);
+    const nextFavorite = !wasFavorite;
+
+    // Optimistic UI
+    if (nextFavorite) {
+        favorites.add(path);
+    } else {
+        favorites.delete(path);
+    }
+    applyFavoriteUI(btn, nextFavorite);
+
+    // Animation pulse
+    btn.classList.remove('pulse');
+    // Force reflow to restart animation
+    void btn.offsetWidth;
+    btn.classList.add('pulse');
+
+    try {
+        if (nextFavorite) {
+            await addFavorite(path);
+        } else {
+            await removeFavorite(path);
+        }
+    } catch (error) {
+        log('Favorite toggle failed, reverting:', error);
+        // Revert
+        if (wasFavorite) {
+            favorites.add(path);
+        } else {
+            favorites.delete(path);
+        }
+        applyFavoriteUI(btn, wasFavorite);
+    }
+
+    // If favorites filter is active, re-render to add/remove the card from view
+    if (typeFilter === 'favorites') {
+        renderGallery();
+    }
+}
+
+function applyFavoriteUI(btn, isFavorite) {
+    btn.classList.toggle('is-favorite', isFavorite);
+    btn.setAttribute('aria-pressed', isFavorite ? 'true' : 'false');
+    btn.setAttribute('aria-label', isFavorite ? 'Favorit entfernen' : 'Als Favorit markieren');
+    const icon = btn.querySelector('.favorite-icon');
+    if (icon) icon.textContent = isFavorite ? '★' : '☆';
 }
 
 // Toggle selection
@@ -609,13 +759,30 @@ function updateSelectedCount() {
     downloadBtn.disabled = count === 0;
 }
 
-// Select all
+// Select all (only visible files under the active filter)
 selectAllBtn.addEventListener('click', () => {
-    images.forEach(fileObj => selectedImages.add(fileObj.path));
+    const visible = images.filter(fileObj => matchesFilters(fileObj, fileObj.type));
+    visible.forEach(fileObj => selectedImages.add(fileObj.path));
     document.querySelectorAll('.image-card').forEach(card => {
         card.classList.add('selected');
     });
     updateSelectedCount();
+});
+
+// Type filter buttons (Alle / Ordner / Bilder / Videos / Favoriten)
+document.querySelectorAll('.type-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+        if (!filter || filter === typeFilter) return;
+        typeFilter = filter;
+        // Update button states
+        document.querySelectorAll('.type-filter-btn').forEach(b => {
+            const isActive = b.dataset.filter === typeFilter;
+            b.classList.toggle('active', isActive);
+            b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+        renderGallery();
+    });
 });
 
 // Deselect all
