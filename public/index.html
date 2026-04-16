@@ -62,6 +62,20 @@
                     <button id="download-btn" class="btn-primary" disabled aria-label="Ausgewählte Bilder herunterladen">Ausgewählte herunterladen</button>
                     <button id="select-all-btn" class="btn-secondary" aria-label="Alle Bilder auswählen">Alle auswählen</button>
                     <button id="deselect-all-btn" class="btn-secondary" aria-label="Alle Bilder abwählen">Alle abwählen</button>
+                    <button id="shortcuts-help-btn" class="btn-secondary" aria-label="Tastenkürzel anzeigen" title="Tastenkürzel (?)">?</button>
+                </div>
+            </div>
+            <div class="gallery-filterbar" role="search" aria-label="Galerie filtern">
+                <div class="search-wrapper">
+                    <span class="search-icon" aria-hidden="true">🔍</span>
+                    <input type="search" id="search-input" class="search-input" placeholder="Suchen…" aria-label="Dateien suchen" autocomplete="off">
+                    <button type="button" id="search-clear" class="search-clear hidden" aria-label="Suche leeren">×</button>
+                </div>
+                <div class="type-filter" role="group" aria-label="Nach Typ filtern">
+                    <button type="button" class="type-filter-btn active" data-filter="all" aria-pressed="true">Alle</button>
+                    <button type="button" class="type-filter-btn" data-filter="folders" aria-pressed="false">Ordner</button>
+                    <button type="button" class="type-filter-btn" data-filter="images" aria-pressed="false">Bilder</button>
+                    <button type="button" class="type-filter-btn" data-filter="videos" aria-pressed="false">Videos</button>
                 </div>
             </div>
         </header>
@@ -106,6 +120,13 @@
         <div class="modal-content">
             <button class="close-modal" aria-label="Vorschau schließen">&times;</button>
             <h2 id="preview-title" class="sr-only">Medienvorschau</h2>
+            <div class="preview-toolbar" aria-label="Vorschau-Werkzeugleiste">
+                <span id="preview-counter" class="preview-counter" aria-live="polite">0 / 0</span>
+                <button id="slideshow-toggle" class="slideshow-btn" type="button" aria-label="Diashow starten" aria-pressed="false">
+                    <span class="slideshow-icon" aria-hidden="true">▶</span>
+                    <span class="slideshow-label">Diashow</span>
+                </button>
+            </div>
             <div id="preview-container">
                 <img id="preview-image" src="" alt="Vorschau" class="hidden">
                 <video id="preview-video" controls class="hidden" aria-label="Video Vorschau"></video>
@@ -116,6 +137,43 @@
             </nav>
         </div>
     </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcuts-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title">
+        <div class="modal-content shortcuts-modal-content">
+            <button class="close-modal" id="close-shortcuts" aria-label="Tastenkürzel schließen">&times;</button>
+            <h2 id="shortcuts-title">Tastenkürzel</h2>
+            <dl class="shortcuts-list">
+                <div class="shortcut-row">
+                    <dt><kbd>Strg</kbd> + <kbd>A</kbd></dt>
+                    <dd>Alle auswählen</dd>
+                </div>
+                <div class="shortcut-row">
+                    <dt><kbd>Strg</kbd> + <kbd>D</kbd></dt>
+                    <dd>Ausgewählte herunterladen</dd>
+                </div>
+                <div class="shortcut-row">
+                    <dt><kbd>Esc</kbd></dt>
+                    <dd>Auswahl aufheben oder Fenster schließen</dd>
+                </div>
+                <div class="shortcut-row">
+                    <dt><kbd>←</kbd> / <kbd>→</kbd></dt>
+                    <dd>In der Vorschau navigieren</dd>
+                </div>
+                <div class="shortcut-row">
+                    <dt><kbd>Leertaste</kbd></dt>
+                    <dd>Diashow starten oder pausieren</dd>
+                </div>
+                <div class="shortcut-row">
+                    <dt><kbd>?</kbd></dt>
+                    <dd>Diese Hilfe anzeigen</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <!-- Rubber-band selection overlay -->
+    <div id="rubber-band" class="rubber-band hidden" aria-hidden="true"></div>
 
     <script src="app.js"></script>
 </body>
