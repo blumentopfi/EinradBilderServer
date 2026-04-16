@@ -68,7 +68,10 @@ const changePasswordError = document.getElementById('change-password-error');
 const previewModal = document.getElementById('preview-modal');
 const previewImage = document.getElementById('preview-image');
 const previewVideo = document.getElementById('preview-video');
-const closeModal = document.querySelector('.close-modal');
+const previewCloseBtn = document.getElementById('preview-close-btn');
+const previewCounter = document.getElementById('preview-counter');
+const previewFilename = document.getElementById('preview-filename');
+const previewHints = document.getElementById('preview-hints');
 const prevBtn = document.getElementById('prev-btn');
 const nextBtn = document.getElementById('next-btn');
 
@@ -666,10 +669,21 @@ downloadBtn.addEventListener('click', async () => {
 });
 
 // Preview modal
+let previewHintsTimeout = null;
+
 function openPreview(index) {
     currentPreviewIndex = index;
-    updatePreview();
+    updatePreview(false);
     previewModal.classList.remove('hidden');
+    previewModal.classList.remove('closing');
+
+    // Show keyboard hints, then fade them out
+    if (previewHints) {
+        previewHints.style.animation = 'none';
+        // Trigger reflow to restart animation
+        void previewHints.offsetWidth;
+        previewHints.style.animation = 'hintsAppear 3s 0.5s ease forwards';
+    }
 }
 
 function closePreview() {
@@ -681,7 +695,7 @@ function closePreview() {
     currentPreviewIndex = -1;
 }
 
-function updatePreview() {
+function updatePreview(crossfade) {
     if (currentPreviewIndex < 0 || currentPreviewIndex >= images.length) return;
 
     const fileObj = images[currentPreviewIndex];
@@ -689,19 +703,35 @@ function updatePreview() {
     if (fileObj.type === 'video') {
         // Show video, hide image
         previewImage.classList.add('hidden');
-        previewImage.src = ''; // Clear image source
+        previewImage.src = '';
         previewVideo.classList.remove('hidden');
+        if (crossfade) {
+            previewVideo.classList.remove('crossfade');
+            void previewVideo.offsetWidth;
+            previewVideo.classList.add('crossfade');
+        }
         previewVideo.src = `/api/media/${encodeURIComponent(fileObj.path)}`;
         previewVideo.load();
     } else {
         // Show image, hide video
         previewVideo.classList.add('hidden');
         previewVideo.pause();
-        previewVideo.src = ''; // Clear video source
+        previewVideo.src = '';
         previewImage.classList.remove('hidden');
+        if (crossfade) {
+            previewImage.classList.remove('crossfade');
+            void previewImage.offsetWidth;
+            previewImage.classList.add('crossfade');
+        }
         previewImage.src = `/api/media/${encodeURIComponent(fileObj.path)}`;
         previewImage.alt = fileObj.name;
     }
+
+    // Update counter
+    previewCounter.textContent = `${currentPreviewIndex + 1} / ${images.length}`;
+
+    // Update filename
+    previewFilename.textContent = fileObj.name;
 
     prevBtn.disabled = currentPreviewIndex === 0;
     nextBtn.disabled = currentPreviewIndex === images.length - 1;
@@ -710,19 +740,19 @@ function updatePreview() {
 function showPrevImage() {
     if (currentPreviewIndex > 0) {
         currentPreviewIndex--;
-        updatePreview();
+        updatePreview(true);
     }
 }
 
 function showNextImage() {
     if (currentPreviewIndex < images.length - 1) {
         currentPreviewIndex++;
-        updatePreview();
+        updatePreview(true);
     }
 }
 
 // Modal event listeners
-closeModal.addEventListener('click', closePreview);
+previewCloseBtn.addEventListener('click', closePreview);
 previewModal.addEventListener('click', (e) => {
     if (e.target === previewModal) {
         closePreview();

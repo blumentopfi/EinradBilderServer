@@ -102,19 +102,18 @@
     </div>
 
     <!-- Preview Modal -->
-    <div id="preview-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="preview-title">
-        <div class="modal-content">
-            <button class="close-modal" aria-label="Vorschau schließen">&times;</button>
-            <h2 id="preview-title" class="sr-only">Medienvorschau</h2>
-            <div id="preview-container">
-                <img id="preview-image" src="" alt="Vorschau" class="hidden">
-                <video id="preview-video" controls class="hidden" aria-label="Video Vorschau"></video>
-            </div>
-            <nav class="modal-nav" aria-label="Medien-Navigation">
-                <button id="prev-btn" class="nav-btn" aria-label="Vorheriges Bild anzeigen">&#8249; Vorheriges</button>
-                <button id="next-btn" class="nav-btn" aria-label="Nächstes Bild anzeigen">Nächstes &#8250;</button>
-            </nav>
+    <div id="preview-modal" class="preview-modal hidden" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+        <h2 id="preview-title" class="sr-only">Medienvorschau</h2>
+        <button id="preview-close-btn" class="preview-close" aria-label="Vorschau schließen">&times;</button>
+        <span id="preview-counter" class="preview-counter"></span>
+        <button id="prev-btn" class="preview-nav-btn preview-nav-prev" aria-label="Vorheriges Bild anzeigen">&#8249;</button>
+        <button id="next-btn" class="preview-nav-btn preview-nav-next" aria-label="Nächstes Bild anzeigen">&#8250;</button>
+        <div id="preview-container" class="preview-container">
+            <img id="preview-image" src="" alt="Vorschau" class="hidden">
+            <video id="preview-video" controls class="hidden" aria-label="Video Vorschau"></video>
         </div>
+        <div id="preview-filename" class="preview-filename"></div>
+        <div id="preview-hints" class="preview-hints">&larr; &rarr; Navigieren &middot; ESC Schlie&szlig;en</div>
     </div>
 
     <script src="app.js"></script>
