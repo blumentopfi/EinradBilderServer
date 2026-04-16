@@ -101,19 +101,19 @@ let selectedImages = new Set();
 let currentPreviewIndex = -1;
 let currentUser = null;
 
-// ============================================
-// Dark Mode Initialization
-// ============================================
-(function initDarkMode() {
-    const saved = localStorage.getItem('theme');
-    if (saved === 'dark' || saved === 'light') {
-        document.documentElement.setAttribute('data-theme', saved);
-    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
-        document.documentElement.setAttribute('data-theme', 'light');
-    }
-})();
+// Filter/search state
+let searchQuery = '';
+let typeFilter = 'all'; // 'all' | 'folders' | 'images' | 'videos'
+
+// Slideshow state
+let slideshowTimer = null;
+let slideshowPlaying = false;
+const SLIDESHOW_INTERVAL_MS = 4000;
+
+// Breadcrumb dropdown cache (path -> folder listing)
+const breadcrumbSiblingCache = new Map();
+
+// Dark mode is initialized by dark-mode.js (loaded before this script)
 
 // DOM elements
 const loginScreen = document.getElementById('login-screen');
@@ -150,6 +150,17 @@ const previewFilename = document.getElementById('preview-filename');
 const previewHints = document.getElementById('preview-hints');
 const prevBtn = document.getElementById('prev-btn');
 const nextBtn = document.getElementById('next-btn');
+
+// New feature DOM elements
+const searchInput = document.getElementById('search-input');
+const searchClear = document.getElementById('search-clear');
+const typeFilterBtns = document.querySelectorAll('.type-filter-btn');
+const shortcutsHelpBtn = document.getElementById('shortcuts-help-btn');
+const shortcutsModal = document.getElementById('shortcuts-modal');
+const closeShortcuts = document.getElementById('close-shortcuts');
+const slideshowToggle = document.getElementById('slideshow-toggle');
+const previewCounter = document.getElementById('preview-counter');
+const rubberBand = document.getElementById('rubber-band');
 
 // Check authentication on load
 checkAuth();
@@ -342,6 +353,13 @@ async function loadImages(path = '') {
     errorMessage.textContent = '';
     currentPath = path;
 
+    // Reset search/filter when navigating to a new folder
+    if (searchInput && searchInput.value) {
+        searchInput.value = '';
+        if (searchClear) searchClear.classList.add('hidden');
+    }
+    searchQuery = '';
+
     try {
         const url = `/api/browse${path ? `?path=${encodeURIComponent(path)}` : ''}`;
         const response = await fetch(url);
@@ -351,6 +369,8 @@ async function loadImages(path = '') {
         folders = data.folders || [];
         images = data.files || [];
         currentPath = data.currentPath || '';
+        // Update cache for this path's folders (they are siblings of any child)
+        breadcrumbSiblingCache.set(currentPath || '', folders);
         renderGallery();
     } catch (error) {
         errorMessage.textContent = 'Medien konnten nicht geladen werden';
@@ -358,6 +378,19 @@ async function loadImages(path = '') {
     } finally {
         loading.classList.add('hidden');
     }
+}
+
+// Apply current search + type filter to an array of items (with a `name` property)
+function matchesFilters(item, kind) {
+    // kind: 'folder' | 'image' | 'video'
+    if (typeFilter === 'folders' && kind !== 'folder') return false;
+    if (typeFilter === 'images' && kind !== 'image') return false;
+    if (typeFilter === 'videos' && kind !== 'video') return false;
+    if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        if (!item.name.toLowerCase().includes(q)) return false;
+    }
+    return true;
 }
 
 // Render gallery
@@ -370,7 +403,12 @@ function renderGallery() {
     // Collect all cards for staggered animation
     const allCards = [];
 
-    // Show back button if not in root
+    // Filter folders and files according to current search/type filter
+    const filtersActive = searchQuery !== '' || typeFilter !== 'all';
+    const visibleFolders = folders.filter(f => matchesFilters(f, 'folder'));
+    const visibleFiles = images.filter(f => matchesFilters(f, f.type));
+
+    // Show back button if not in root (always, so user can escape even while filtering)
     if (currentPath) {
         const backCard = createBackButton();
         gallery.appendChild(backCard);
@@ -378,23 +416,33 @@ function renderGallery() {
     }
 
     // Render folders
-    folders.forEach(folder => {
+    visibleFolders.forEach(folder => {
         const card = createFolderCard(folder);
         gallery.appendChild(card);
         allCards.push(card);
     });
 
-    // Render files
+    // Render files. Keep the original index so preview navigation works on the
+    // full list; the preview modal still iterates `images` in order.
     images.forEach((fileObj, index) => {
+        if (!matchesFilters(fileObj, fileObj.type)) return;
         const card = createMediaCard(fileObj, index);
         gallery.appendChild(card);
         allCards.push(card);
     });
 
-    // Show message only if nothing to display (no folders, no files, and not in a subfolder with back button)
-    if (folders.length === 0 && images.length === 0 && !currentPath) {
+    // Empty states
+    if (visibleFolders.length === 0 && visibleFiles.length === 0) {
         const message = document.createElement('p');
-        message.textContent = 'Keine Medien im Verzeichnis gefunden';
+        if (filtersActive) {
+            message.className = 'gallery-empty-filter';
+            message.textContent = 'Keine Treffer';
+        } else if (!currentPath) {
+            message.textContent = 'Keine Medien im Verzeichnis gefunden';
+        } else {
+            // Subfolder but empty -> let back button carry navigation, nothing else
+            return updateSelectedCount();
+        }
         gallery.appendChild(message);
     }
 
@@ -444,7 +492,10 @@ function renderBreadcrumb() {
     const parts = currentPath ? currentPath.split('/') : [];
     let pathSoFar = '';
 
-    // Home/root
+    // Home/root — wrapped so we can attach a dropdown of top-level folders
+    const homeWrapper = document.createElement('span');
+    homeWrapper.className = 'breadcrumb-item-wrapper';
+
     const home = document.createElement('span');
     home.className = 'breadcrumb-item' + (currentPath ? '' : ' active');
     home.textContent = '🏠 Start';
@@ -461,7 +512,14 @@ function renderBreadcrumb() {
             }
         });
     }
-    breadcrumb.appendChild(home);
+    homeWrapper.appendChild(home);
+
+    // Only add a dropdown toggle when this level isn't the active/current one
+    if (currentPath) {
+        const toggle = createBreadcrumbDropdownToggle('', 'Start', null);
+        homeWrapper.appendChild(toggle);
+    }
+    breadcrumb.appendChild(homeWrapper);
 
     // Path parts
     parts.forEach((part, index) => {
@@ -472,6 +530,9 @@ function renderBreadcrumb() {
 
         pathSoFar += (pathSoFar ? '/' : '') + part;
         const isLast = index === parts.length - 1;
+
+        const wrapper = document.createElement('span');
+        wrapper.className = 'breadcrumb-item-wrapper';
 
         const item = document.createElement('span');
         item.className = 'breadcrumb-item' + (isLast ? ' active' : '');
@@ -492,9 +553,120 @@ function renderBreadcrumb() {
             });
         }
 
-        breadcrumb.appendChild(item);
+        wrapper.appendChild(item);
+
+        // Non-active segments get a sibling dropdown
+        if (!isLast) {
+            // Parent path is one level up from this segment
+            const parentPath = parts.slice(0, index).join('/');
+            const toggle = createBreadcrumbDropdownToggle(parentPath, part, pathSoFar);
+            wrapper.appendChild(toggle);
+        }
+
+        breadcrumb.appendChild(wrapper);
     });
 }
+
+// Creates the little ▾ button that opens a dropdown of sibling folders at a
+// particular breadcrumb level. `parentPath` is the path whose children we
+// should list; `currentSegmentPath` is the path currently represented at this
+// breadcrumb level (used to mark "current" in the dropdown).
+function createBreadcrumbDropdownToggle(parentPath, label, currentSegmentPath) {
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'breadcrumb-dropdown-toggle';
+    toggle.innerHTML = '▾';
+    toggle.setAttribute('aria-haspopup', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', `Geschwister-Ordner von ${label} anzeigen`);
+
+    toggle.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        // Close any other open breadcrumb dropdown first
+        closeAllBreadcrumbDropdowns(toggle);
+
+        const wrapper = toggle.parentElement;
+        const existing = wrapper.querySelector('.breadcrumb-dropdown');
+        if (existing) {
+            existing.remove();
+            toggle.setAttribute('aria-expanded', 'false');
+            return;
+        }
+
+        toggle.setAttribute('aria-expanded', 'true');
+        const dropdown = document.createElement('div');
+        dropdown.className = 'breadcrumb-dropdown';
+        dropdown.setAttribute('role', 'menu');
+        dropdown.innerHTML = '<div class="breadcrumb-dropdown-empty">Wird geladen…</div>';
+        wrapper.appendChild(dropdown);
+
+        try {
+            const siblings = await fetchBreadcrumbSiblings(parentPath);
+            dropdown.innerHTML = '';
+            if (siblings.length === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'breadcrumb-dropdown-empty';
+                empty.textContent = 'Keine weiteren Ordner';
+                dropdown.appendChild(empty);
+            } else {
+                siblings.forEach(folder => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'breadcrumb-dropdown-item';
+                    btn.setAttribute('role', 'menuitem');
+                    btn.textContent = folder.name;
+                    if (currentSegmentPath && folder.path === currentSegmentPath) {
+                        btn.classList.add('current');
+                    }
+                    btn.addEventListener('click', (ev) => {
+                        ev.stopPropagation();
+                        closeAllBreadcrumbDropdowns();
+                        loadImages(folder.path);
+                    });
+                    dropdown.appendChild(btn);
+                });
+            }
+        } catch (err) {
+            log('Breadcrumb siblings error:', err);
+            dropdown.innerHTML = '<div class="breadcrumb-dropdown-empty">Fehler beim Laden</div>';
+        }
+    });
+
+    return toggle;
+}
+
+async function fetchBreadcrumbSiblings(parentPath) {
+    const cacheKey = parentPath || '';
+    if (breadcrumbSiblingCache.has(cacheKey)) {
+        return breadcrumbSiblingCache.get(cacheKey);
+    }
+    const url = `/api/browse${parentPath ? `?path=${encodeURIComponent(parentPath)}` : ''}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to load siblings');
+    const data = await response.json();
+    const folderList = data.folders || [];
+    breadcrumbSiblingCache.set(cacheKey, folderList);
+    return folderList;
+}
+
+function closeAllBreadcrumbDropdowns(exceptToggle) {
+    document.querySelectorAll('.breadcrumb-dropdown').forEach(dd => dd.remove());
+    document.querySelectorAll('.breadcrumb-dropdown-toggle[aria-expanded="true"]').forEach(t => {
+        if (t !== exceptToggle) t.setAttribute('aria-expanded', 'false');
+    });
+}
+
+// Close breadcrumb dropdowns on outside click or Esc
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.breadcrumb-item-wrapper')) {
+        closeAllBreadcrumbDropdowns();
+    }
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeAllBreadcrumbDropdowns();
+    }
+});
 
 // Create back button card
 function createBackButton() {
@@ -794,6 +966,7 @@ function closePreview() {
     if (!previewVideo.classList.contains('hidden')) {
         previewVideo.pause();
     }
+    pauseSlideshow();
     previewModal.classList.add('hidden');
     currentPreviewIndex = -1;
 }
@@ -815,6 +988,11 @@ function updatePreview(crossfade) {
         }
         previewVideo.src = `/api/media/${encodeURIComponent(fileObj.path)}`;
         previewVideo.load();
+        // Slideshow should not auto-advance through videos — pause it so the
+        // user can choose to watch or manually skip.
+        if (slideshowPlaying) {
+            pauseSlideshow();
+        }
     } else {
         // Show image, hide video
         previewVideo.classList.add('hidden');
@@ -838,20 +1016,106 @@ function updatePreview(crossfade) {
 
     prevBtn.disabled = currentPreviewIndex === 0;
     nextBtn.disabled = currentPreviewIndex === images.length - 1;
+
+    // Update counter
+    if (previewCounter) {
+        previewCounter.textContent = `${currentPreviewIndex + 1} / ${images.length}`;
+    }
 }
 
-function showPrevImage() {
+function showPrevImage(fromSlideshow = false) {
+    if (!fromSlideshow) pauseSlideshow();
     if (currentPreviewIndex > 0) {
         currentPreviewIndex--;
         updatePreview(true);
     }
 }
 
-function showNextImage() {
+function showNextImage(fromSlideshow = false) {
+    if (!fromSlideshow) pauseSlideshow();
     if (currentPreviewIndex < images.length - 1) {
         currentPreviewIndex++;
         updatePreview(true);
+        // If slideshow reached the last item, stop (don't loop).
+        if (fromSlideshow && currentPreviewIndex === images.length - 1) {
+            // Allow the last slide to display, then pause
+            clearTimeout(slideshowTimer);
+            slideshowTimer = setTimeout(() => pauseSlideshow(), SLIDESHOW_INTERVAL_MS);
+        }
+    } else if (fromSlideshow) {
+        pauseSlideshow();
     }
+}
+
+// ============================================
+// Slideshow
+// ============================================
+function startSlideshow() {
+    if (slideshowPlaying) return;
+    // Don't start on the last item
+    if (currentPreviewIndex >= images.length - 1) return;
+    slideshowPlaying = true;
+    updateSlideshowUI();
+    scheduleNextSlide();
+}
+
+function pauseSlideshow() {
+    if (!slideshowPlaying) {
+        if (slideshowToggle) updateSlideshowUI();
+        return;
+    }
+    slideshowPlaying = false;
+    clearTimeout(slideshowTimer);
+    slideshowTimer = null;
+    updateSlideshowUI();
+}
+
+function toggleSlideshow() {
+    if (slideshowPlaying) {
+        pauseSlideshow();
+    } else {
+        startSlideshow();
+    }
+}
+
+function scheduleNextSlide() {
+    clearTimeout(slideshowTimer);
+    slideshowTimer = setTimeout(() => {
+        if (!slideshowPlaying) return;
+        // Stop if we're at the end
+        if (currentPreviewIndex >= images.length - 1) {
+            pauseSlideshow();
+            return;
+        }
+        showNextImage(true);
+        if (slideshowPlaying) scheduleNextSlide();
+    }, SLIDESHOW_INTERVAL_MS);
+}
+
+function updateSlideshowUI() {
+    if (!slideshowToggle) return;
+    const icon = slideshowToggle.querySelector('.slideshow-icon');
+    const label = slideshowToggle.querySelector('.slideshow-label');
+    if (slideshowPlaying) {
+        slideshowToggle.classList.add('playing');
+        slideshowToggle.setAttribute('aria-pressed', 'true');
+        slideshowToggle.setAttribute('aria-label', 'Diashow pausieren');
+        if (icon) icon.textContent = '⏸';
+        if (label) label.textContent = 'Pause';
+    } else {
+        slideshowToggle.classList.remove('playing');
+        slideshowToggle.setAttribute('aria-pressed', 'false');
+        slideshowToggle.setAttribute('aria-label', 'Diashow starten');
+        if (icon) icon.textContent = '▶';
+        if (label) label.textContent = 'Diashow';
+    }
+}
+
+if (slideshowToggle) {
+    slideshowToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleSlideshow();
+    });
 }
 
 // Modal event listeners
@@ -881,8 +1145,10 @@ previewModal.addEventListener('touchend', (e) => {
 function handleSwipe() {
     const swipeThreshold = 50;
     if (touchEndX < touchStartX - swipeThreshold) {
+        pauseSlideshow();
         showNextImage(); // Swipe left
     } else if (touchEndX > touchStartX + swipeThreshold) {
+        pauseSlideshow();
         showPrevImage(); // Swipe right
     }
 }
@@ -891,6 +1157,17 @@ function handleSwipe() {
 document.addEventListener('keydown', (e) => {
     // Don't interfere with form inputs
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    const shortcutsOpen = shortcutsModal && !shortcutsModal.classList.contains('hidden');
+
+    // Shortcuts modal handling (takes priority)
+    if (shortcutsOpen) {
+        if (e.key === 'Escape' || e.key === '?') {
+            e.preventDefault();
+            closeShortcutsModal();
+        }
+        return;
+    }
 
     if (!previewModal.classList.contains('hidden')) {
         // Preview modal shortcuts
@@ -902,6 +1179,13 @@ document.addEventListener('keydown', (e) => {
         } else if (e.key === 'ArrowRight') {
             e.preventDefault();
             showNextImage();
+        } else if (e.key === ' ') {
+            // Space toggles slideshow (only when focus isn't on an input/button that wants space)
+            const tag = e.target.tagName;
+            if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'BUTTON') {
+                e.preventDefault();
+                toggleSlideshow();
+            }
         }
     } else if (!changePasswordModal.classList.contains('hidden')) {
         // Change password modal shortcuts
@@ -920,6 +1204,9 @@ document.addEventListener('keydown', (e) => {
         } else if (e.key === 'd' && (e.ctrlKey || e.metaKey) && selectedImages.size > 0) {
             e.preventDefault();
             downloadBtn.click();
+        } else if (e.key === '?') {
+            e.preventDefault();
+            openShortcutsModal();
         }
     }
 });
@@ -931,26 +1218,6 @@ document.addEventListener('keydown', (e) => {
             e.preventDefault();
             e.target.click();
         }
-    }
-});
-
-// ============================================
-// Dark Mode Toggle
-// ============================================
-const darkModeToggle = document.getElementById('dark-mode-toggle');
-if (darkModeToggle) {
-    darkModeToggle.addEventListener('click', () => {
-        const current = document.documentElement.getAttribute('data-theme');
-        const next = current === 'dark' ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-    });
-}
-
-// Listen for OS theme changes (only if user hasn't set a manual preference)
-window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-    if (!localStorage.getItem('theme')) {
-        document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
     }
 });
 
@@ -972,4 +1239,178 @@ if (togglePasswordBtn) {
             togglePasswordBtn.setAttribute('aria-label', 'Passwort anzeigen');
         }
     });
+}
+
+// ============================================
+// Search + type filter wiring
+// ============================================
+const applySearch = debounce((value) => {
+    searchQuery = value.trim();
+    renderGallery();
+}, 200);
+
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        const val = e.target.value;
+        if (searchClear) searchClear.classList.toggle('hidden', val === '');
+        applySearch(val);
+    });
+
+    // Esc in search input clears it
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && searchInput.value) {
+            searchInput.value = '';
+            searchClear.classList.add('hidden');
+            searchQuery = '';
+            renderGallery();
+            e.stopPropagation();
+        }
+    });
+}
+
+if (searchClear) {
+    searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        searchClear.classList.add('hidden');
+        searchQuery = '';
+        renderGallery();
+        searchInput.focus();
+    });
+}
+
+typeFilterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const filter = btn.dataset.filter;
+        if (filter === typeFilter) return;
+        typeFilter = filter;
+        typeFilterBtns.forEach(b => {
+            const isActive = b === btn;
+            b.classList.toggle('active', isActive);
+            b.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+        renderGallery();
+    });
+});
+
+// ============================================
+// Shortcuts help modal
+// ============================================
+function openShortcutsModal() {
+    if (!shortcutsModal) return;
+    shortcutsModal.classList.remove('hidden');
+}
+
+function closeShortcutsModal() {
+    if (!shortcutsModal) return;
+    shortcutsModal.classList.add('hidden');
+}
+
+if (shortcutsHelpBtn) {
+    shortcutsHelpBtn.addEventListener('click', openShortcutsModal);
+}
+if (closeShortcuts) {
+    closeShortcuts.addEventListener('click', closeShortcutsModal);
+}
+if (shortcutsModal) {
+    shortcutsModal.addEventListener('click', (e) => {
+        if (e.target === shortcutsModal) closeShortcutsModal();
+    });
+}
+
+// ============================================
+// Drag-to-select (rubber band) — desktop only
+// ============================================
+if (!isTouchDevice && rubberBand) {
+    let rbActive = false;
+    let rbStartX = 0;
+    let rbStartY = 0;
+    let rbShiftAdd = false;
+    // Snapshot of selection at drag start (used for Shift+drag additive mode)
+    let rbBaseSelection = null;
+
+    // Only start a rubber band when the mouse goes down on the gallery
+    // background — not on a card, button, or interactive element.
+    gallery.addEventListener('mousedown', (e) => {
+        if (e.button !== 0) return; // left click only
+        // Ignore clicks on cards or any interactive children
+        if (e.target.closest('.image-card, .folder-card, button, a, input, .checkbox-overlay')) return;
+        // Ignore when any modal is open
+        if (!previewModal.classList.contains('hidden')) return;
+        if (!changePasswordModal.classList.contains('hidden')) return;
+        if (shortcutsModal && !shortcutsModal.classList.contains('hidden')) return;
+
+        rbActive = true;
+        rbShiftAdd = e.shiftKey;
+        rbBaseSelection = new Set(selectedImages);
+        rbStartX = e.clientX;
+        rbStartY = e.clientY;
+
+        rubberBand.style.left = rbStartX + 'px';
+        rubberBand.style.top = rbStartY + 'px';
+        rubberBand.style.width = '0px';
+        rubberBand.style.height = '0px';
+        rubberBand.classList.remove('hidden');
+        document.body.classList.add('rubber-banding');
+
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!rbActive) return;
+        const x = Math.min(e.clientX, rbStartX);
+        const y = Math.min(e.clientY, rbStartY);
+        const w = Math.abs(e.clientX - rbStartX);
+        const h = Math.abs(e.clientY - rbStartY);
+
+        rubberBand.style.left = x + 'px';
+        rubberBand.style.top = y + 'px';
+        rubberBand.style.width = w + 'px';
+        rubberBand.style.height = h + 'px';
+
+        // Hit-test all media cards against the rubber band rect.
+        // We only include image-cards (not folder-cards) because folders
+        // aren't "selectable" in the selection model.
+        const bandRect = { left: x, top: y, right: x + w, bottom: y + h };
+        const cards = gallery.querySelectorAll('.image-card');
+        cards.forEach(card => {
+            const r = card.getBoundingClientRect();
+            const intersects = !(r.right < bandRect.left || r.left > bandRect.right ||
+                                 r.bottom < bandRect.top || r.top > bandRect.bottom);
+            const path = card.dataset.path;
+            if (!path) return;
+            if (intersects) {
+                if (!selectedImages.has(path)) {
+                    selectedImages.add(path);
+                    card.classList.add('selected');
+                }
+            } else {
+                // If shift-adding, leave the pre-drag base selection alone;
+                // otherwise remove cards no longer inside the band.
+                if (rbShiftAdd) {
+                    if (!rbBaseSelection.has(path) && selectedImages.has(path)) {
+                        selectedImages.delete(path);
+                        card.classList.remove('selected');
+                    }
+                } else {
+                    if (selectedImages.has(path)) {
+                        selectedImages.delete(path);
+                        card.classList.remove('selected');
+                    }
+                }
+            }
+        });
+        updateSelectedCount();
+    });
+
+    function endRubberBand() {
+        if (!rbActive) return;
+        rbActive = false;
+        rbBaseSelection = null;
+        rubberBand.classList.add('hidden');
+        document.body.classList.remove('rubber-banding');
+    }
+
+    document.addEventListener('mouseup', endRubberBand);
+    document.addEventListener('mouseleave', endRubberBand);
+    window.addEventListener('blur', endRubberBand);
 }
