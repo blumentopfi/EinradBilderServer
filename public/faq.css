@@ -329,6 +329,133 @@
     font-size: 1.1em;
 }
 
+/* Voting */
+.faq-vote-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.faq-vote-label {
+    color: #666;
+    font-size: 0.9em;
+}
+
+.faq-vote-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.faq-vote-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 999px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.9em;
+    color: #555;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s,
+                transform 0.1s, box-shadow 0.15s;
+}
+
+.faq-vote-btn:hover:not(:disabled) {
+    background: #f5f7fa;
+    border-color: #ff6b35;
+    color: #ff6b35;
+}
+
+.faq-vote-btn:focus-visible {
+    outline: 2px solid #ff6b35;
+    outline-offset: 2px;
+}
+
+.faq-vote-btn:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.faq-vote-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.faq-vote-btn.active {
+    background: #ff6b35;
+    border-color: #ff6b35;
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(255, 107, 53, 0.3);
+}
+
+.faq-vote-btn.active:hover:not(:disabled) {
+    background: #f7931e;
+    border-color: #f7931e;
+    color: #fff;
+}
+
+.faq-vote-icon {
+    font-size: 1em;
+    line-height: 1;
+}
+
+.faq-vote-count {
+    font-weight: 600;
+    min-width: 1ch;
+    text-align: center;
+}
+
+.faq-vote-error {
+    color: #d93025;
+    font-size: 0.85em;
+    margin-left: 4px;
+}
+
+.faq-vote-error.hidden {
+    display: none;
+}
+
+/* Dark mode */
+[data-theme="dark"] .faq-vote-row {
+    border-top-color: #333;
+}
+
+[data-theme="dark"] .faq-vote-label {
+    color: #bbb;
+}
+
+[data-theme="dark"] .faq-vote-btn {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #ddd;
+}
+
+[data-theme="dark"] .faq-vote-btn:hover:not(:disabled) {
+    background: #333;
+    border-color: #ff6b35;
+    color: #ff6b35;
+}
+
+[data-theme="dark"] .faq-vote-btn.active {
+    background: #ff6b35;
+    border-color: #ff6b35;
+    color: #fff;
+}
+
+[data-theme="dark"] .faq-vote-btn.active:hover:not(:disabled) {
+    background: #f7931e;
+    border-color: #f7931e;
+    color: #fff;
+}
+
+[data-theme="dark"] .faq-vote-error {
+    color: #ff7a70;
+}
+
 /* Form Styles */
 #faq-form textarea {
     width: 100%;
@@ -503,6 +630,24 @@
         padding: 10px 14px;
         font-size: 0.9em;
     }
+
+    .faq-vote-row {
+        gap: 10px;
+    }
+
+    .faq-vote-label {
+        font-size: 0.85em;
+        flex-basis: 100%;
+    }
+
+    .faq-vote-buttons {
+        width: 100%;
+    }
+
+    .faq-vote-btn {
+        flex: 1;
+        justify-content: center;
+    }
 }
 
 /* ============================================
@@ -560,5 +705,22 @@
 
 [data-theme="dark"] .faq-actions button:hover {
     background: rgba(255, 107, 53, 0.15);
+    border-color: #ff6b35;
+}
+
+[data-theme="dark"] .faq-vote-btn {
+    background: #0f1628;
+    border-color: #2a2a4a;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .faq-vote-btn:hover:not(:disabled) {
+    background: rgba(255, 107, 53, 0.15);
+    border-color: #ff6b35;
+}
+
+[data-theme="dark"] .faq-vote-btn.active {
+    background: #ff6b35;
+    color: white;
     border-color: #ff6b35;
 }
