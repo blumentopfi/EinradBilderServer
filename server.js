@@ -646,6 +646,247 @@ app.post('/api/admin/upload', requireUploader, upload.single('file'), async (req
   }
 });
 
+// Helper: validate a path is safe and resolves inside IMAGES_DIR.
+// Returns the absolute resolved path, or null on rejection.
+function resolveMediaPath(relativePath) {
+  if (typeof relativePath !== 'string') return null;
+  if (relativePath.includes('..') || relativePath.includes('\\')) return null;
+  const fullPath = path.join(IMAGES_DIR, relativePath);
+  const normalized = path.normalize(fullPath);
+  if (!normalized.startsWith(IMAGES_DIR)) return null;
+  return normalized;
+}
+
+// Rename a file or folder (same parent directory)
+app.post('/api/admin/rename', requireUploader, async (req, res) => {
+  try {
+    const { path: targetPath, newName } = req.body;
+
+    if (typeof targetPath !== 'string' || typeof newName !== 'string') {
+      return res.status(400).json({ error: 'Pfad und neuer Name erforderlich' });
+    }
+
+    if (targetPath.length === 0) {
+      return res.status(400).json({ error: 'Ungültiger Pfad' });
+    }
+
+    // Validate new name: only safe chars, no separators
+    if (!/^[a-zA-Z0-9äöüÄÖÜß _.-]+$/.test(newName)) {
+      return res.status(400).json({ error: 'Ungültiger Name' });
+    }
+    if (newName.includes('/') || newName.includes('\\') || newName.includes('..')) {
+      return res.status(400).json({ error: 'Ungültiger Name' });
+    }
+
+    const sourceAbs = resolveMediaPath(targetPath);
+    if (!sourceAbs) {
+      return res.status(403).json({ error: 'Zugriff verweigert' });
+    }
+
+    // Compute new relative and absolute paths (same parent)
+    const parentRel = path.posix.dirname(targetPath.replace(/\\/g, '/'));
+    const parentIsRoot = parentRel === '.' || parentRel === '';
+    const newRel = parentIsRoot ? newName : `${parentRel}/${newName}`;
+    const newAbs = resolveMediaPath(newRel);
+    if (!newAbs) {
+      return res.status(403).json({ error: 'Zugriff verweigert' });
+    }
+
+    // Source must exist
+    try {
+      await fs.access(sourceAbs);
+    } catch {
+      return res.status(404).json({ error: 'Quelle nicht gefunden' });
+    }
+
+    // Reject if target already exists (case-sensitive check; if same inode on case-insensitive FS
+    // and only case is changing, allow rename by comparing absolute paths).
+    if (sourceAbs !== newAbs) {
+      try {
+        await fs.access(newAbs);
+        return res.status(409).json({ error: 'Ziel existiert bereits' });
+      } catch {
+        // Target does not exist, safe to proceed
+      }
+    }
+
+    await fs.rename(sourceAbs, newAbs);
+
+    try {
+      logAudit(req.session.userId, 'RENAME', null, JSON.stringify({ fromPath: targetPath, toPath: newRel }));
+    } catch (err) {
+      console.error('Audit log error (RENAME):', err);
+    }
+
+    res.json({ success: true, newPath: newRel });
+  } catch (error) {
+    console.error('Rename error:', error);
+    res.status(500).json({ error: 'Fehler beim Umbenennen' });
+  }
+});
+
+// Move multiple files/folders into a target folder
+app.post('/api/admin/move', requireUploader, async (req, res) => {
+  try {
+    const { paths, targetFolder } = req.body;
+
+    if (!Array.isArray(paths) || paths.length === 0) {
+      return res.status(400).json({ error: 'Pfade erforderlich' });
+    }
+
+    if (paths.length > 500) {
+      return res.status(400).json({ error: 'Zu viele Einträge' });
+    }
+
+    if (typeof targetFolder !== 'string') {
+      return res.status(400).json({ error: 'Zielordner erforderlich' });
+    }
+
+    // Resolve target folder (empty string = root)
+    const targetAbs = targetFolder === ''
+      ? IMAGES_DIR
+      : resolveMediaPath(targetFolder);
+
+    if (!targetAbs) {
+      return res.status(403).json({ error: 'Zugriff verweigert' });
+    }
+
+    // Ensure target exists and is a directory
+    try {
+      const stat = await fs.stat(targetAbs);
+      if (!stat.isDirectory()) {
+        return res.status(400).json({ error: 'Zielordner ist kein Verzeichnis' });
+      }
+    } catch {
+      return res.status(404).json({ error: 'Zielordner nicht gefunden' });
+    }
+
+    let moved = 0;
+    const errors = [];
+
+    for (const itemPath of paths) {
+      if (typeof itemPath !== 'string' || itemPath.length === 0) {
+        errors.push({ path: String(itemPath), error: 'Ungültiger Pfad' });
+        continue;
+      }
+
+      const sourceAbs = resolveMediaPath(itemPath);
+      if (!sourceAbs) {
+        errors.push({ path: itemPath, error: 'Ungültiger Pfad' });
+        continue;
+      }
+
+      const baseName = path.basename(sourceAbs);
+      const destAbs = path.join(targetAbs, baseName);
+
+      // Don't allow moving into itself or its own subtree (folder case)
+      const sourceWithSep = sourceAbs + path.sep;
+      if (destAbs === sourceAbs || targetAbs === sourceAbs || (targetAbs + path.sep).startsWith(sourceWithSep)) {
+        errors.push({ path: itemPath, error: 'Kann nicht in sich selbst verschoben werden' });
+        continue;
+      }
+
+      // Skip overwrites
+      try {
+        await fs.access(destAbs);
+        errors.push({ path: itemPath, error: 'Ziel existiert bereits' });
+        continue;
+      } catch {
+        // OK to proceed
+      }
+
+      try {
+        await fs.access(sourceAbs);
+      } catch {
+        errors.push({ path: itemPath, error: 'Quelle nicht gefunden' });
+        continue;
+      }
+
+      try {
+        await fs.rename(sourceAbs, destAbs);
+        moved++;
+
+        const newRel = targetFolder === '' ? baseName : `${targetFolder}/${baseName}`;
+        try {
+          logAudit(req.session.userId, 'MOVE', null, JSON.stringify({ fromPath: itemPath, toPath: newRel }));
+        } catch (err) {
+          console.error('Audit log error (MOVE):', err);
+        }
+      } catch (err) {
+        console.error('Move error for', itemPath, err);
+        errors.push({ path: itemPath, error: 'Fehler beim Verschieben' });
+      }
+    }
+
+    res.json({ success: true, moved, errors });
+  } catch (error) {
+    console.error('Move error:', error);
+    res.status(500).json({ error: 'Fehler beim Verschieben' });
+  }
+});
+
+// Delete files and/or folders (folders deleted recursively)
+app.delete('/api/admin/media', requireUploader, async (req, res) => {
+  try {
+    const { paths } = req.body;
+
+    if (!Array.isArray(paths) || paths.length === 0) {
+      return res.status(400).json({ error: 'Pfade erforderlich' });
+    }
+
+    if (paths.length > 500) {
+      return res.status(400).json({ error: 'Zu viele Einträge' });
+    }
+
+    let deleted = 0;
+    const errors = [];
+
+    for (const itemPath of paths) {
+      if (typeof itemPath !== 'string' || itemPath.length === 0) {
+        errors.push({ path: String(itemPath), error: 'Ungültiger Pfad' });
+        continue;
+      }
+
+      const targetAbs = resolveMediaPath(itemPath);
+      if (!targetAbs) {
+        errors.push({ path: itemPath, error: 'Ungültiger Pfad' });
+        continue;
+      }
+
+      // Never allow deleting IMAGES_DIR itself
+      if (targetAbs === IMAGES_DIR) {
+        errors.push({ path: itemPath, error: 'Root-Verzeichnis kann nicht gelöscht werden' });
+        continue;
+      }
+
+      try {
+        await fs.access(targetAbs);
+      } catch {
+        errors.push({ path: itemPath, error: 'Nicht gefunden' });
+        continue;
+      }
+
+      try {
+        await fs.rm(targetAbs, { recursive: true, force: true });
+        deleted++;
+        try {
+          logAudit(req.session.userId, 'DELETE_MEDIA', null, JSON.stringify({ path: itemPath }));
+        } catch (err) {
+          console.error('Audit log error (DELETE_MEDIA):', err);
+        }
+      } catch (err) {
+        console.error('Delete error for', itemPath, err);
+        errors.push({ path: itemPath, error: 'Fehler beim Löschen' });
+      }
+    }
+
+    res.json({ success: true, deleted, errors });
+  } catch (error) {
+    console.error('Delete media error:', error);
+    res.status(500).json({ error: 'Fehler beim Löschen' });
+  }
+});
+
 // Create folder endpoint
 app.post('/api/admin/folders', requireUploader, async (req, res) => {
   try {

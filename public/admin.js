@@ -16,6 +16,13 @@ let auditTotal = 0;
 let auditOffset = 0;
 const AUDIT_PAGE_SIZE = 50;
 
+// Manage tab state
+let manageInitialized = false;
+let manageCurrentPath = '';
+let manageEntries = []; // { name, type: 'folder'|'image'|'video', path }
+let manageSelection = new Set();
+let moveSelectedTarget = ''; // selected target folder for move modal
+
 // DOM Elements
 const adminUserInfo = document.getElementById('admin-user-info');
 const adminUserMenuBtn = document.getElementById('admin-user-menu-btn');
@@ -130,6 +137,10 @@ function switchTab(tabName) {
     // Lazy-load tab data
     if (tabName === 'audit' && auditEntries.length === 0) {
         loadAuditLog(true);
+    }
+    if (tabName === 'manage' && !manageInitialized) {
+        manageInitialized = true;
+        loadManagePath('');
     }
 }
 
@@ -767,8 +778,36 @@ function showConfirm(title, message, onConfirm) {
 }
 
 function showSuccess(message) {
-    // Simple alert for now - could be enhanced with a toast notification
-    alert(message);
+    showToast(message, 'success');
+}
+
+// ===== TOAST NOTIFICATIONS =====
+
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) {
+        // Fallback if container is missing
+        if (type === 'error' || type === 'warning') console.warn(message);
+        else console.log(message);
+        return;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
+    toast.setAttribute('aria-live', type === 'error' ? 'assertive' : 'polite');
+
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('toast-fade-out');
+        toast.addEventListener('animationend', () => toast.remove());
+        // Fallback removal
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 500);
+    }, 3500);
 }
 
 // ===== DASHBOARD =====
@@ -1211,4 +1250,508 @@ function formatFileSize(bytes) {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// ===== MEDIEN VERWALTEN (Manage tab) =====
+
+const manageLoading = document.getElementById('manage-loading');
+const manageError = document.getElementById('manage-error');
+const manageBreadcrumb = document.getElementById('manage-breadcrumb');
+const manageTbody = document.getElementById('manage-tbody');
+const manageSelectAll = document.getElementById('manage-select-all');
+const manageBulkBar = document.getElementById('manage-bulk-bar');
+const manageSelectedCount = document.getElementById('manage-selected-count');
+const manageMoveBtn = document.getElementById('manage-move-btn');
+const manageDeleteBtn = document.getElementById('manage-delete-btn');
+const manageClearBtn = document.getElementById('manage-clear-btn');
+const reloadManageBtn = document.getElementById('reload-manage-btn');
+const renameModal = document.getElementById('rename-modal');
+const renameForm = document.getElementById('rename-form');
+const moveModal = document.getElementById('move-modal');
+const moveFolderTree = document.getElementById('move-folder-tree');
+const moveCurrentTarget = document.getElementById('move-current-target');
+const moveConfirmBtn = document.getElementById('move-confirm-btn');
+
+if (reloadManageBtn) {
+    reloadManageBtn.addEventListener('click', () => loadManagePath(manageCurrentPath));
+}
+
+async function loadManagePath(path) {
+    if (!manageTbody) return;
+    manageCurrentPath = path || '';
+    manageSelection.clear();
+
+    if (manageLoading) manageLoading.classList.remove('hidden');
+    if (manageError) manageError.textContent = '';
+
+    try {
+        const url = `/api/browse${manageCurrentPath ? `?path=${encodeURIComponent(manageCurrentPath)}` : ''}`;
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (!response.ok) {
+            if (manageError) manageError.textContent = data.error || 'Fehler beim Laden';
+            manageEntries = [];
+            manageTbody.innerHTML = '';
+            updateManageBulkUI();
+            return;
+        }
+
+        // Combine folders first, then files
+        const folders = (data.folders || []).map(f => ({ ...f, type: 'folder' }));
+        const files = (data.files || []).map(f => ({ ...f }));
+        manageEntries = [...folders, ...files];
+
+        renderManageBreadcrumb(manageCurrentPath);
+        renderManageTable();
+    } catch (error) {
+        console.error('Load manage path error:', error);
+        if (manageError) manageError.textContent = 'Verbindungsfehler';
+    } finally {
+        if (manageLoading) manageLoading.classList.add('hidden');
+    }
+}
+
+function renderManageBreadcrumb(currentPath) {
+    if (!manageBreadcrumb) return;
+    manageBreadcrumb.innerHTML = '';
+
+    const parts = currentPath ? currentPath.split('/') : [];
+
+    // Home
+    const home = document.createElement('span');
+    home.className = 'breadcrumb-item';
+    home.textContent = '🏠 Start';
+    home.style.cursor = 'pointer';
+    home.setAttribute('role', 'button');
+    home.setAttribute('tabindex', '0');
+    home.addEventListener('click', () => loadManagePath(''));
+    home.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); loadManagePath(''); }
+    });
+    manageBreadcrumb.appendChild(home);
+
+    let accumulated = '';
+    parts.forEach((part, index) => {
+        const sep = document.createElement('span');
+        sep.className = 'breadcrumb-separator';
+        sep.textContent = ' / ';
+        sep.style.margin = '0 8px';
+        manageBreadcrumb.appendChild(sep);
+
+        accumulated += (index > 0 ? '/' : '') + part;
+        const item = document.createElement('span');
+        item.className = 'breadcrumb-item';
+        item.textContent = part;
+        const isLast = index === parts.length - 1;
+        if (isLast) {
+            item.classList.add('active');
+        } else {
+            item.style.cursor = 'pointer';
+            const pathCopy = accumulated;
+            item.setAttribute('role', 'button');
+            item.setAttribute('tabindex', '0');
+            item.addEventListener('click', () => loadManagePath(pathCopy));
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); loadManagePath(pathCopy); }
+            });
+        }
+        manageBreadcrumb.appendChild(item);
+    });
+}
+
+function renderManageTable() {
+    manageTbody.innerHTML = '';
+
+    if (manageEntries.length === 0) {
+        manageTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px; color:#888;">Dieser Ordner ist leer</td></tr>';
+        updateManageBulkUI();
+        return;
+    }
+
+    manageEntries.forEach(entry => {
+        const tr = document.createElement('tr');
+        const isChecked = manageSelection.has(entry.path);
+        if (isChecked) tr.classList.add('row-selected');
+
+        const icon = entry.type === 'folder' ? '📁' : (entry.type === 'video' ? '🎥' : '🖼️');
+        const typeLabel = entry.type === 'folder' ? 'Ordner' : (entry.type === 'video' ? 'Video' : 'Bild');
+
+        tr.innerHTML = `
+            <td class="col-checkbox">
+                <input type="checkbox" class="manage-checkbox" data-path="${escapeHtml(entry.path)}" ${isChecked ? 'checked' : ''} aria-label="${escapeHtml(entry.name)} auswählen">
+            </td>
+            <td class="col-icon" aria-hidden="true">${icon}</td>
+            <td class="col-name"></td>
+            <td class="col-type">${typeLabel}</td>
+            <td class="col-actions">
+                <div class="action-buttons">
+                    <button class="action-btn manage-rename-btn">Umbenennen</button>
+                    <button class="action-btn danger manage-delete-single-btn">Löschen</button>
+                </div>
+            </td>
+        `;
+
+        const nameCell = tr.querySelector('.col-name');
+        if (entry.type === 'folder') {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'manage-name-btn';
+            btn.textContent = entry.name;
+            btn.addEventListener('click', () => loadManagePath(entry.path));
+            nameCell.appendChild(btn);
+        } else {
+            const span = document.createElement('span');
+            span.className = 'manage-name-text';
+            span.textContent = entry.name;
+            nameCell.appendChild(span);
+        }
+
+        const checkbox = tr.querySelector('.manage-checkbox');
+        checkbox.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                manageSelection.add(entry.path);
+                tr.classList.add('row-selected');
+            } else {
+                manageSelection.delete(entry.path);
+                tr.classList.remove('row-selected');
+            }
+            updateManageBulkUI();
+        });
+
+        tr.querySelector('.manage-rename-btn').addEventListener('click', () => openRenameModal(entry));
+        tr.querySelector('.manage-delete-single-btn').addEventListener('click', () => deleteManageItems([entry.path], entry.name));
+
+        manageTbody.appendChild(tr);
+    });
+
+    updateManageBulkUI();
+}
+
+function updateManageBulkUI() {
+    const count = manageSelection.size;
+    if (manageSelectedCount) manageSelectedCount.textContent = count;
+    if (manageBulkBar) {
+        if (count > 0) manageBulkBar.classList.remove('hidden');
+        else manageBulkBar.classList.add('hidden');
+    }
+
+    if (manageSelectAll) {
+        const boxes = manageTbody.querySelectorAll('.manage-checkbox');
+        const total = boxes.length;
+        const checked = Array.from(boxes).filter(b => b.checked).length;
+        if (total === 0 || checked === 0) {
+            manageSelectAll.checked = false;
+            manageSelectAll.indeterminate = false;
+        } else if (checked === total) {
+            manageSelectAll.checked = true;
+            manageSelectAll.indeterminate = false;
+        } else {
+            manageSelectAll.checked = false;
+            manageSelectAll.indeterminate = true;
+        }
+    }
+}
+
+if (manageSelectAll) {
+    manageSelectAll.addEventListener('change', (e) => {
+        const checked = e.target.checked;
+        manageTbody.querySelectorAll('.manage-checkbox').forEach(cb => {
+            cb.checked = checked;
+            const path = cb.dataset.path;
+            const row = cb.closest('tr');
+            if (checked) {
+                manageSelection.add(path);
+                if (row) row.classList.add('row-selected');
+            } else {
+                manageSelection.delete(path);
+                if (row) row.classList.remove('row-selected');
+            }
+        });
+        updateManageBulkUI();
+    });
+}
+
+if (manageClearBtn) {
+    manageClearBtn.addEventListener('click', () => {
+        manageSelection.clear();
+        manageTbody.querySelectorAll('.manage-checkbox').forEach(cb => {
+            cb.checked = false;
+            const row = cb.closest('tr');
+            if (row) row.classList.remove('row-selected');
+        });
+        if (manageSelectAll) {
+            manageSelectAll.checked = false;
+            manageSelectAll.indeterminate = false;
+        }
+        updateManageBulkUI();
+    });
+}
+
+if (manageDeleteBtn) {
+    manageDeleteBtn.addEventListener('click', () => {
+        const paths = Array.from(manageSelection);
+        if (paths.length === 0) return;
+        deleteManageItems(paths, `${paths.length} Einträge`);
+    });
+}
+
+if (manageMoveBtn) {
+    manageMoveBtn.addEventListener('click', () => {
+        const paths = Array.from(manageSelection);
+        if (paths.length === 0) return;
+        openMoveModal(paths);
+    });
+}
+
+// ===== Rename =====
+
+function openRenameModal(entry) {
+    document.getElementById('rename-path').value = entry.path;
+    const input = document.getElementById('rename-new-name');
+    input.value = entry.name;
+    document.getElementById('rename-modal-title').textContent =
+        entry.type === 'folder' ? 'Ordner umbenennen' : 'Datei umbenennen';
+    openModal(renameModal);
+    // Pre-select name without extension for files, full name for folders
+    setTimeout(() => {
+        input.focus();
+        if (entry.type !== 'folder') {
+            const dot = entry.name.lastIndexOf('.');
+            if (dot > 0) input.setSelectionRange(0, dot);
+            else input.select();
+        } else {
+            input.select();
+        }
+    }, 50);
+}
+
+if (renameForm) {
+    renameForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const targetPath = document.getElementById('rename-path').value;
+        const newName = document.getElementById('rename-new-name').value.trim();
+
+        if (!newName) {
+            showToast('Name darf nicht leer sein', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/admin/rename', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: targetPath, newName })
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                closeModal(renameModal);
+                showToast('Erfolgreich umbenannt', 'success');
+                loadManagePath(manageCurrentPath);
+            } else {
+                showToast(data.error || 'Fehler beim Umbenennen', 'error');
+            }
+        } catch (error) {
+            console.error('Rename error:', error);
+            showToast('Verbindungsfehler', 'error');
+        }
+    });
+}
+
+// ===== Delete =====
+
+function deleteManageItems(paths, label) {
+    const title = paths.length === 1 ? 'Eintrag löschen' : 'Einträge löschen';
+    const msg = paths.length === 1
+        ? `Möchten Sie "${label}" wirklich löschen? Ordner werden inklusive Inhalt gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`
+        : `Möchten Sie ${label} wirklich löschen? Ordner werden inklusive Inhalt gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`;
+
+    showConfirm(title, msg, async () => {
+        try {
+            const response = await fetch('/api/admin/media', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paths })
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                const deleted = data.deleted ?? 0;
+                const errCount = Array.isArray(data.errors) ? data.errors.length : 0;
+                if (errCount > 0) {
+                    showToast(`${deleted} gelöscht, ${errCount} Fehler`, 'warning');
+                } else {
+                    showToast(`${deleted} erfolgreich gelöscht`, 'success');
+                }
+                manageSelection.clear();
+                loadManagePath(manageCurrentPath);
+            } else {
+                showToast(data.error || 'Fehler beim Löschen', 'error');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            showToast('Verbindungsfehler', 'error');
+        }
+    });
+}
+
+// ===== Move =====
+
+async function openMoveModal(paths) {
+    moveSelectedTarget = '';
+    moveCurrentTarget.textContent = '/media';
+    moveFolderTree.innerHTML = '<div class="loading">Lade Ordner…</div>';
+    openModal(moveModal);
+
+    // Build folder tree from root
+    try {
+        const rootNode = await buildFolderTreeNode('', 'Start');
+        moveFolderTree.innerHTML = '';
+        moveFolderTree.appendChild(rootNode);
+    } catch (error) {
+        console.error('Folder tree error:', error);
+        moveFolderTree.innerHTML = '<div class="move-tree-empty">Fehler beim Laden des Ordnerbaums</div>';
+    }
+}
+
+async function buildFolderTreeNode(folderPath, displayName) {
+    const wrap = document.createElement('div');
+    wrap.className = 'move-tree-item';
+
+    const node = document.createElement('div');
+    node.className = 'move-tree-node';
+    node.dataset.path = folderPath;
+    node.setAttribute('role', 'treeitem');
+    node.setAttribute('tabindex', '0');
+
+    const caret = document.createElement('span');
+    caret.className = 'move-tree-caret';
+    caret.textContent = '▸';
+
+    const icon = document.createElement('span');
+    icon.textContent = folderPath === '' ? '🏠' : '📁';
+
+    const label = document.createElement('span');
+    label.textContent = displayName;
+
+    node.appendChild(caret);
+    node.appendChild(icon);
+    node.appendChild(label);
+
+    const children = document.createElement('div');
+    children.className = 'move-tree-children';
+    children.style.display = 'none';
+
+    let loaded = false;
+
+    node.addEventListener('click', async (e) => {
+        e.stopPropagation();
+
+        // Select this node as the target
+        moveFolderTree.querySelectorAll('.move-tree-node.selected').forEach(n => n.classList.remove('selected'));
+        node.classList.add('selected');
+        moveSelectedTarget = folderPath;
+        moveCurrentTarget.textContent = folderPath === '' ? '/media' : `/media/${folderPath}`;
+
+        // Toggle children (lazy-load)
+        if (!loaded) {
+            loaded = true;
+            try {
+                const url = `/api/browse${folderPath ? `?path=${encodeURIComponent(folderPath)}` : ''}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                if (response.ok) {
+                    const subfolders = data.folders || [];
+                    if (subfolders.length === 0) {
+                        const empty = document.createElement('div');
+                        empty.className = 'move-tree-empty';
+                        empty.textContent = '(keine Unterordner)';
+                        children.appendChild(empty);
+                    } else {
+                        for (const sf of subfolders) {
+                            const childNode = await buildFolderTreeNode(sf.path, sf.name);
+                            children.appendChild(childNode);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Load subfolder error:', err);
+            }
+        }
+
+        if (children.style.display === 'none') {
+            children.style.display = 'block';
+            caret.textContent = '▾';
+        } else {
+            children.style.display = 'none';
+            caret.textContent = '▸';
+        }
+    });
+
+    node.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            node.click();
+        }
+    });
+
+    wrap.appendChild(node);
+    wrap.appendChild(children);
+    return wrap;
+}
+
+if (moveConfirmBtn) {
+    moveConfirmBtn.addEventListener('click', async () => {
+        const paths = Array.from(manageSelection);
+        if (paths.length === 0) {
+            closeModal(moveModal);
+            return;
+        }
+
+        // Prevent moving into a folder that is itself part of the selection
+        // or into the current folder (no-op)
+        const selectedTarget = moveSelectedTarget;
+
+        // No-op: target equals current folder
+        if (selectedTarget === manageCurrentPath) {
+            showToast('Die Einträge befinden sich bereits in diesem Ordner', 'warning');
+            return;
+        }
+
+        // Prevent moving a folder into itself or its own subtree (client-side check)
+        for (const p of paths) {
+            if (p === selectedTarget || selectedTarget.startsWith(p + '/')) {
+                showToast('Ordner kann nicht in sich selbst verschoben werden', 'error');
+                return;
+            }
+        }
+
+        try {
+            const response = await fetch('/api/admin/move', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ paths, targetFolder: selectedTarget })
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                closeModal(moveModal);
+                const moved = data.moved ?? 0;
+                const errCount = Array.isArray(data.errors) ? data.errors.length : 0;
+                if (errCount > 0) {
+                    showToast(`${moved} verschoben, ${errCount} Fehler`, 'warning');
+                } else {
+                    showToast(`${moved} erfolgreich verschoben`, 'success');
+                }
+                manageSelection.clear();
+                loadManagePath(manageCurrentPath);
+            } else {
+                showToast(data.error || 'Fehler beim Verschieben', 'error');
+            }
+        } catch (error) {
+            console.error('Move error:', error);
+            showToast('Verbindungsfehler', 'error');
+        }
+    });
 }

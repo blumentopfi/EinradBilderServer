@@ -57,6 +57,10 @@
                 <span class="tab-icon" aria-hidden="true">📤</span>
                 Medien hochladen
             </button>
+            <button class="tab-btn" data-tab="manage">
+                <span class="tab-icon" aria-hidden="true">🗂️</span>
+                Medien verwalten
+            </button>
             <button class="tab-btn" data-tab="audit">
                 <span class="tab-icon" aria-hidden="true">📋</span>
                 Audit-Log
@@ -262,6 +266,50 @@
                         </div>
                         <div id="upload-items"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Manage Media Tab -->
+            <div id="manage-tab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Medien verwalten</h2>
+                    <button id="reload-manage-btn" class="btn-secondary" title="Aktualisieren" aria-label="Ansicht aktualisieren">
+                        <span aria-hidden="true">🔄</span> Aktualisieren
+                    </button>
+                </div>
+
+                <div id="manage-loading" class="loading hidden" role="status" aria-live="polite">Lade Inhalte…</div>
+                <div id="manage-error" class="error-message" role="alert" aria-live="polite"></div>
+
+                <div id="manage-breadcrumb" class="breadcrumb" aria-label="Aktueller Pfad"></div>
+
+                <!-- Bulk action bar for manage -->
+                <div id="manage-bulk-bar" class="bulk-action-bar hidden">
+                    <span class="bulk-counter"><strong id="manage-selected-count">0</strong> ausgewählt</span>
+                    <div class="bulk-action-buttons">
+                        <button id="manage-move-btn" class="action-btn">Verschieben</button>
+                        <button id="manage-delete-btn" class="action-btn danger">Löschen</button>
+                        <button id="manage-clear-btn" class="action-btn subtle">Auswahl aufheben</button>
+                    </div>
+                </div>
+
+                <div class="manage-table-container">
+                    <table class="manage-table">
+                        <thead>
+                            <tr>
+                                <th class="col-checkbox">
+                                    <input type="checkbox" id="manage-select-all" aria-label="Alle auswählen">
+                                </th>
+                                <th class="col-icon" aria-label="Typ"></th>
+                                <th>Name</th>
+                                <th class="col-type">Typ</th>
+                                <th class="col-actions">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="manage-tbody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -481,6 +529,62 @@
             </div>
         </div>
     </div>
+
+    <!-- Rename Modal -->
+    <div id="rename-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="rename-modal-title">
+        <div class="modal-content">
+            <button type="button" class="close-modal" data-modal="rename-modal" aria-label="Schließen">&times;</button>
+            <h2 id="rename-modal-title">Umbenennen</h2>
+
+            <form id="rename-form">
+                <input type="hidden" id="rename-path" name="rename-path">
+                <div class="form-group">
+                    <label for="rename-new-name">Neuer Name *</label>
+                    <input type="text" id="rename-new-name" name="rename-new-name" required
+                           pattern="[a-zA-Z0-9äöüÄÖÜß _.\-]+"
+                           autocomplete="off" spellcheck="false">
+                    <small>Buchstaben, Zahlen, Leerzeichen, Punkt, - und _</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary cancel-btn" data-modal="rename-modal">
+                        Abbrechen
+                    </button>
+                    <button type="submit" class="btn-primary">Umbenennen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Move Modal -->
+    <div id="move-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="move-modal-title">
+        <div class="modal-content">
+            <button type="button" class="close-modal" data-modal="move-modal" aria-label="Schließen">&times;</button>
+            <h2 id="move-modal-title">Verschieben</h2>
+
+            <p id="move-modal-description" class="move-description">Bitte wählen Sie den Zielordner aus.</p>
+
+            <div class="form-group">
+                <label id="move-current-label">Ausgewählter Zielordner:</label>
+                <div id="move-current-target" class="current-path" aria-labelledby="move-current-label">/media</div>
+            </div>
+
+            <div class="form-group">
+                <label>Ordnerbaum:</label>
+                <div id="move-folder-tree" class="move-folder-tree" role="tree" aria-label="Zielordner auswählen"></div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn-secondary cancel-btn" data-modal="move-modal">
+                    Abbrechen
+                </button>
+                <button type="button" id="move-confirm-btn" class="btn-primary">Hierhin verschieben</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
 
     <script src="dark-mode.js"></script>
     <script src="admin.js"></script>
