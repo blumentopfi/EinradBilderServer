@@ -43,13 +43,21 @@
 
         <!-- Tab Navigation -->
         <nav class="admin-tabs">
-            <button class="tab-btn active" data-tab="users">
+            <button class="tab-btn active" data-tab="dashboard">
+                <span class="tab-icon">📊</span>
+                Dashboard
+            </button>
+            <button class="tab-btn" data-tab="users">
                 <span class="tab-icon">👥</span>
                 Benutzerverwaltung
             </button>
             <button class="tab-btn" data-tab="upload">
                 <span class="tab-icon">📤</span>
                 Medien hochladen
+            </button>
+            <button class="tab-btn" data-tab="audit">
+                <span class="tab-icon">📋</span>
+                Audit-Log
             </button>
             <button class="tab-btn" data-tab="documents">
                 <span class="tab-icon">📄</span>
@@ -59,8 +67,115 @@
 
         <!-- Tab Content -->
         <div class="admin-content">
+            <!-- Dashboard Tab -->
+            <div id="dashboard-tab" class="tab-content active">
+                <div class="tab-header">
+                    <h2>Dashboard</h2>
+                    <button id="reload-dashboard-btn" class="btn-secondary" title="Aktualisieren">
+                        🔄 Aktualisieren
+                    </button>
+                </div>
+
+                <div id="dashboard-loading" class="loading hidden">Lade Statistiken...</div>
+                <div id="dashboard-error" class="error-message"></div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-icon">👥</span>
+                            <h3>Benutzer</h3>
+                        </div>
+                        <div class="stat-card-body">
+                            <div class="stat-big-number" id="stat-users-total">–</div>
+                            <div class="stat-details">
+                                <div class="stat-row">
+                                    <span class="stat-label">Administratoren</span>
+                                    <span class="stat-value" id="stat-users-admin">–</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Uploader</span>
+                                    <span class="stat-value" id="stat-users-uploader">–</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Benutzer</span>
+                                    <span class="stat-value" id="stat-users-user">–</span>
+                                </div>
+                                <div class="stat-row highlight">
+                                    <span class="stat-label">Aktiv (7 Tage)</span>
+                                    <span class="stat-value" id="stat-users-active7">–</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-icon">❓</span>
+                            <h3>FAQ</h3>
+                        </div>
+                        <div class="stat-card-body">
+                            <div class="stat-big-number" id="stat-faq-total">–</div>
+                            <div class="stat-details">
+                                <div class="stat-row">
+                                    <span class="stat-label">Fragen insgesamt</span>
+                                    <span class="stat-value" id="stat-faq-total-2">–</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Kategorien</span>
+                                    <span class="stat-value" id="stat-faq-categories">–</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-icon">🖼️</span>
+                            <h3>Medien</h3>
+                        </div>
+                        <div class="stat-card-body">
+                            <div class="stat-big-number" id="stat-media-files">–</div>
+                            <div class="stat-details">
+                                <div class="stat-row">
+                                    <span class="stat-label">Dateien</span>
+                                    <span class="stat-value" id="stat-media-files-2">–</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Ordner</span>
+                                    <span class="stat-value" id="stat-media-folders">–</span>
+                                </div>
+                                <div class="stat-row highlight">
+                                    <span class="stat-label">Speicher</span>
+                                    <span class="stat-value" id="stat-media-storage">–</span>
+                                </div>
+                                <div class="stat-row">
+                                    <span class="stat-label">Uploads (7 Tage)</span>
+                                    <span class="stat-value" id="stat-media-uploads7">–</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <span class="stat-card-icon">⭐</span>
+                            <h3>Favoriten</h3>
+                        </div>
+                        <div class="stat-card-body">
+                            <div class="stat-big-number" id="stat-favorites-total">–</div>
+                            <div class="stat-details">
+                                <div class="stat-row">
+                                    <span class="stat-label">Gesamt (alle Benutzer)</span>
+                                    <span class="stat-value" id="stat-favorites-total-2">–</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- User Management Tab -->
-            <div id="users-tab" class="tab-content active">
+            <div id="users-tab" class="tab-content">
                 <div class="tab-header">
                     <h2>Benutzerverwaltung</h2>
                     <button id="create-user-btn" class="btn-primary">+ Neuer Benutzer</button>
@@ -68,11 +183,26 @@
 
                 <div id="users-loading" class="loading hidden">Lade Benutzer...</div>
                 <div id="users-error" class="error-message"></div>
+                <div id="bulk-message" class="bulk-message hidden"></div>
+
+                <!-- Bulk action bar -->
+                <div id="bulk-action-bar" class="bulk-action-bar hidden">
+                    <span class="bulk-counter"><strong id="bulk-selected-count">0</strong> ausgewählt</span>
+                    <div class="bulk-action-buttons">
+                        <button id="bulk-activate-btn" class="action-btn">Aktivieren</button>
+                        <button id="bulk-deactivate-btn" class="action-btn">Deaktivieren</button>
+                        <button id="bulk-delete-btn" class="action-btn danger">Löschen</button>
+                        <button id="bulk-clear-btn" class="action-btn subtle">Auswahl aufheben</button>
+                    </div>
+                </div>
 
                 <div class="users-table-container">
                     <table class="users-table">
                         <thead>
                             <tr>
+                                <th class="col-checkbox">
+                                    <input type="checkbox" id="users-select-all" aria-label="Alle auswählen">
+                                </th>
                                 <th>Benutzername</th>
                                 <th>Anzeigename</th>
                                 <th>Rolle</th>
@@ -130,6 +260,41 @@
                         </div>
                         <div id="upload-items"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Audit Log Tab -->
+            <div id="audit-tab" class="tab-content">
+                <div class="tab-header">
+                    <h2>Audit-Log</h2>
+                    <button id="reload-audit-btn" class="btn-secondary" title="Aktualisieren">
+                        🔄 Aktualisieren
+                    </button>
+                </div>
+
+                <div id="audit-loading" class="loading hidden">Lade Audit-Einträge...</div>
+                <div id="audit-error" class="error-message"></div>
+
+                <div class="audit-table-container">
+                    <table class="audit-table">
+                        <thead>
+                            <tr>
+                                <th class="col-time">Zeit</th>
+                                <th class="col-user">Benutzer</th>
+                                <th class="col-action">Aktion</th>
+                                <th class="col-target">Ziel</th>
+                                <th class="col-details">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="audit-tbody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="audit-footer">
+                    <span id="audit-counter" class="audit-counter"></span>
+                    <button id="audit-load-more-btn" class="btn-secondary hidden">Mehr laden</button>
                 </div>
             </div>
 
