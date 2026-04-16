@@ -722,3 +722,158 @@
         display: none;
     }
 }
+
+/* ============================================
+   Dark Mode Overrides (Admin Panel)
+   ============================================ */
+[data-theme="dark"] #admin-panel {
+    background: #1a1a2e;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .admin-header {
+    background: #16213e;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    border-bottom: 1px solid #2a2a4a;
+}
+
+[data-theme="dark"] .admin-tabs {
+    background: #16213e;
+    border-bottom-color: #2a2a4a;
+}
+
+[data-theme="dark"] .tab-btn {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .tab-btn:hover {
+    color: #ff6b35;
+    background: rgba(255, 107, 53, 0.1);
+}
+
+[data-theme="dark"] .tab-btn.active {
+    color: #ff6b35;
+}
+
+[data-theme="dark"] .users-table-container {
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+[data-theme="dark"] .users-table {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .users-table thead {
+    background: #0f1628;
+}
+
+[data-theme="dark"] .users-table th,
+[data-theme="dark"] .users-table td {
+    border-color: #2a2a4a;
+}
+
+[data-theme="dark"] .users-table tbody tr:hover {
+    background: rgba(255, 107, 53, 0.08);
+}
+
+[data-theme="dark"] .upload-section {
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .upload-section h3 {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .upload-destination {
+    background: #0f1628;
+    border-color: #2a2a4a;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .drop-zone {
+    background: #0f1628;
+    border-color: #2a2a4a;
+}
+
+[data-theme="dark"] .drop-zone:hover,
+[data-theme="dark"] .drop-zone.drag-over {
+    border-color: #ff6b35;
+    background: rgba(255, 107, 53, 0.08);
+}
+
+[data-theme="dark"] .drop-zone-text,
+[data-theme="dark"] .drop-zone-hint {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .upload-queue {
+    background: #0f1628;
+    border-color: #2a2a4a;
+}
+
+[data-theme="dark"] .upload-item {
+    background: #16213e;
+    border-color: #2a2a4a;
+}
+
+[data-theme="dark"] .upload-filename {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .upload-size,
+[data-theme="dark"] .upload-status {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .progress-bar {
+    background: #2a2a4a;
+}
+
+[data-theme="dark"] .folder-grid {
+    background: transparent;
+}
+
+[data-theme="dark"] .current-path {
+    background: #0f1628;
+    color: #e0e0e0;
+    border-color: #2a2a4a;
+}
+
+[data-theme="dark"] .documents-section {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .section-description {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .document-card {
+    background: #16213e;
+    border-color: #2a2a4a;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .document-card h3 {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .document-link {
+    color: #e0e0e0;
+    background: #0f1628;
+    border-color: #2a2a4a;
+}
+
+[data-theme="dark"] .document-link:hover {
+    background: rgba(255, 107, 53, 0.15);
+    border-color: #ff6b35;
+    color: #ff6b35;
+}
+
+[data-theme="dark"] .tab-header h2 {
+    color: #e0e0e0;
+}

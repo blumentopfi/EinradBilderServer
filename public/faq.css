@@ -194,3 +194,61 @@
         font-size: 0.95em;
     }
 }
+
+/* ============================================
+   Dark Mode Overrides (FAQ Page)
+   ============================================ */
+[data-theme="dark"] #faq-page {
+    background: #1a1a2e;
+    color: #e0e0e0;
+    min-height: 100vh;
+}
+
+[data-theme="dark"] .faq-toolbar h2 {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .faq-item {
+    background: #16213e;
+    border-color: #2a2a4a;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .faq-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .faq-question {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .faq-answer {
+    color: #c0c0c0;
+}
+
+[data-theme="dark"] .faq-category-title {
+    color: #ff6b35;
+    border-bottom-color: #ff6b35;
+}
+
+[data-theme="dark"] .faq-category-name,
+[data-theme="dark"] .faq-order {
+    background: #0f1628;
+    color: #a0a0a0;
+    border: 1px solid #2a2a4a;
+}
+
+[data-theme="dark"] .no-faq {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .faq-actions button {
+    background: #0f1628;
+    border-color: #2a2a4a;
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .faq-actions button:hover {
+    background: rgba(255, 107, 53, 0.15);
+    border-color: #ff6b35;
+}

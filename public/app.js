@@ -126,7 +126,6 @@ const userInfo = document.getElementById('user-info');
 const userMenuBtn = document.getElementById('user-menu-btn');
 const userDropdown = document.getElementById('user-dropdown');
 const adminBtn = document.getElementById('admin-btn');
-const gameNavBtn = document.getElementById('game-nav-btn');
 const faqBtn = document.getElementById('faq-btn');
 const gallery = document.getElementById('gallery');
 const loading = document.getElementById('loading');
@@ -242,11 +241,6 @@ loginForm.addEventListener('submit', async (e) => {
 // Admin button handling
 adminBtn.addEventListener('click', () => {
     window.location.href = '/admin.html';
-});
-
-// Game button handling
-gameNavBtn.addEventListener('click', () => {
-    window.location.href = '/game.html';
 });
 
 // FAQ button handling

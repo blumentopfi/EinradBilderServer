@@ -17,9 +17,11 @@
                 </div>
                 <div class="header-controls">
                     <button id="back-to-gallery-btn" class="btn-nav">Galerie</button>
-                    <button id="faq-game-btn" class="btn-nav">Spiel</button>
                     <button id="admin-nav-btn" class="btn-nav hidden">Admin</button>
                     <button id="faq-nav-btn" class="btn-nav active">FAQ</button>
+                    <button id="dark-mode-toggle" class="btn-dark-mode" aria-label="Dunkelmodus umschalten" title="Dunkelmodus umschalten">
+                        <span class="dark-mode-icon" aria-hidden="true"></span>
+                    </button>
                     <div class="user-menu">
                         <button id="faq-user-menu-btn" class="user-menu-btn">
                             <span id="faq-user-info"></span>
@@ -106,6 +108,7 @@
         </div>
     </div>
 
+    <script src="dark-mode.js"></script>
     <script src="faq.js"></script>
 </body>
 </html>
