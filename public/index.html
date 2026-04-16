@@ -65,6 +65,7 @@
             <div class="gallery-toolbar" role="toolbar" aria-label="Galerie-Werkzeuge">
                 <div class="toolbar-left">
                     <span id="selected-count" class="selected-count" aria-live="polite">0 ausgewählt</span>
+                    <span id="item-count" class="item-count" aria-live="polite"></span>
                 </div>
                 <div class="toolbar-right">
                     <button id="download-btn" class="btn-primary" disabled aria-label="Ausgewählte Bilder herunterladen">Ausgewählte herunterladen</button>
@@ -124,6 +125,12 @@
             </nav>
         </div>
     </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Scroll to Top Button -->
+    <button id="scroll-top-btn" class="scroll-top-btn hidden" aria-label="Nach oben scrollen">&#8593;</button>
 
     <script src="app.js"></script>
 </body>

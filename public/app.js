@@ -27,6 +27,69 @@ async function fetchWithRetry(url, options = {}, retries = 3) {
     }
 }
 
+// Reduced motion preference
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Toast notification system
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+
+    container.appendChild(toast);
+
+    // Auto-dismiss after 3 seconds
+    setTimeout(() => {
+        toast.classList.add('toast-fade-out');
+        toast.addEventListener('animationend', () => {
+            toast.remove();
+        });
+        // Fallback removal for reduced-motion (animation may be instant)
+        setTimeout(() => {
+            if (toast.parentNode) toast.remove();
+        }, 400);
+    }, 3000);
+}
+
+// Scroll-to-top button and sticky header shadow
+(function initScrollFeatures() {
+    const scrollTopBtn = document.getElementById('scroll-top-btn');
+    const headerEl = document.querySelector('#gallery-screen header');
+
+    if (!scrollTopBtn) return;
+
+    const handleScroll = debounce(() => {
+        const scrollY = window.scrollY || window.pageYOffset;
+
+        // Show/hide scroll-to-top button
+        if (scrollY > 300) {
+            scrollTopBtn.classList.remove('hidden');
+        } else {
+            scrollTopBtn.classList.add('hidden');
+        }
+
+        // Sticky header shadow
+        if (headerEl) {
+            if (scrollY > 10) {
+                headerEl.classList.add('scrolled');
+            } else {
+                headerEl.classList.remove('scrolled');
+            }
+        }
+    }, 50);
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    scrollTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+    });
+})();
+
 // Device detection
 const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
@@ -250,7 +313,7 @@ changePasswordForm.addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (response.ok) {
-            alert('Passwort erfolgreich geändert!');
+            showToast('Passwort erfolgreich geändert!', 'success');
             changePasswordModal.classList.add('hidden');
             changePasswordForm.reset();
         } else {
@@ -307,22 +370,28 @@ function renderGallery() {
     // Render breadcrumb
     renderBreadcrumb();
 
+    // Collect all cards for staggered animation
+    const allCards = [];
+
     // Show back button if not in root
     if (currentPath) {
         const backCard = createBackButton();
         gallery.appendChild(backCard);
+        allCards.push(backCard);
     }
 
     // Render folders
     folders.forEach(folder => {
         const card = createFolderCard(folder);
         gallery.appendChild(card);
+        allCards.push(card);
     });
 
     // Render files
     images.forEach((fileObj, index) => {
         const card = createMediaCard(fileObj, index);
         gallery.appendChild(card);
+        allCards.push(card);
     });
 
     // Show message only if nothing to display (no folders, no files, and not in a subfolder with back button)
@@ -330,6 +399,32 @@ function renderGallery() {
         const message = document.createElement('p');
         message.textContent = 'Keine Medien im Verzeichnis gefunden';
         gallery.appendChild(message);
+    }
+
+    // Staggered card entrance animation
+    if (!prefersReducedMotion) {
+        allCards.forEach((card, i) => {
+            card.classList.add('card-enter');
+            const delay = Math.min(i, 20) * 50; // Cap stagger at 20 cards
+            setTimeout(() => {
+                requestAnimationFrame(() => {
+                    card.classList.add('card-visible');
+                });
+            }, delay);
+        });
+    }
+
+    // Update item count display
+    const itemCountEl = document.getElementById('item-count');
+    if (itemCountEl) {
+        const parts = [];
+        if (folders.length > 0) {
+            parts.push(`${folders.length} ${folders.length === 1 ? 'Ordner' : 'Ordner'}`);
+        }
+        if (images.length > 0) {
+            parts.push(`${images.length} ${images.length === 1 ? 'Datei' : 'Dateien'}`);
+        }
+        itemCountEl.textContent = parts.length > 0 ? `· ${parts.join(', ')}` : '';
     }
 
     updateSelectedCount();
@@ -672,7 +767,7 @@ downloadBtn.addEventListener('click', async () => {
         downloadBtn.textContent = 'Ausgewählte herunterladen';
         downloadBtn.disabled = false;
     } catch (error) {
-        alert('Download fehlgeschlagen. Bitte versuchen Sie es erneut.');
+        showToast('Download fehlgeschlagen. Bitte versuchen Sie es erneut.', 'error');
         log('Download error:', error);
         downloadBtn.textContent = 'Ausgewählte herunterladen';
         downloadBtn.disabled = false;
