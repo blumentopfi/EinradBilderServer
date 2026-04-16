@@ -162,6 +162,15 @@ const closeShortcuts = document.getElementById('close-shortcuts');
 const slideshowToggle = document.getElementById('slideshow-toggle');
 const rubberBand = document.getElementById('rubber-band');
 
+// Upload feature DOM elements
+const uploadBtn = document.getElementById('upload-btn');
+const uploadFileInput = document.getElementById('upload-file-input');
+const uploadDropOverlay = document.getElementById('upload-drop-overlay');
+const uploadDropTarget = document.getElementById('upload-drop-target');
+const uploadQueueCard = document.getElementById('upload-queue-card');
+const uploadQueueList = document.getElementById('upload-queue-list');
+const uploadQueueClose = document.getElementById('upload-queue-close');
+
 // Check authentication on load
 checkAuth();
 
@@ -235,6 +244,15 @@ function showGallery() {
             adminBtn.classList.remove('hidden');
         } else {
             adminBtn.classList.add('hidden');
+        }
+
+        // Show upload button if user is admin or uploader
+        if (uploadBtn) {
+            if (canUpload()) {
+                uploadBtn.classList.remove('hidden');
+            } else {
+                uploadBtn.classList.add('hidden');
+            }
         }
     }
 
@@ -378,6 +396,7 @@ logoutBtn.addEventListener('click', async () => {
         images = [];
         currentUser = null;
         gallery.innerHTML = '';
+        if (uploadBtn) uploadBtn.classList.add('hidden');
         showLogin();
     } catch (error) {
         log('Logout error:', error);
@@ -1554,3 +1573,310 @@ if (!isTouchDevice && rubberBand) {
     document.addEventListener('mouseleave', endRubberBand);
     window.addEventListener('blur', endRubberBand);
 }
+
+// ============================================
+// Drag-and-drop upload (admin + uploader roles)
+// ============================================
+function canUpload() {
+    return !!currentUser && (currentUser.role === 'admin' || currentUser.role === 'uploader');
+}
+
+function isGalleryVisible() {
+    return galleryScreen && !galleryScreen.classList.contains('hidden');
+}
+
+function formatUploadSize(bytes) {
+    if (!bytes || bytes < 0) return '0 B';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+}
+
+// Upload queue state — survives folder navigation
+const uploadQueue = new Map(); // id -> { file, targetPath, status, xhr, itemEl }
+let uploadIdCounter = 0;
+let dragDepth = 0; // track nested dragenter/dragleave correctly
+
+function ensureUploadQueueVisible() {
+    if (uploadQueueCard) uploadQueueCard.classList.remove('hidden');
+}
+
+function showDropOverlay() {
+    if (!uploadDropOverlay) return;
+    const label = currentPath && currentPath.length > 0 ? currentPath : 'Start';
+    if (uploadDropTarget) uploadDropTarget.textContent = label;
+    uploadDropOverlay.classList.remove('hidden');
+}
+
+function hideDropOverlay() {
+    if (uploadDropOverlay) uploadDropOverlay.classList.add('hidden');
+}
+
+function createUploadItem(entry) {
+    const li = document.createElement('li');
+    li.className = 'upload-queue-item';
+    li.dataset.uploadId = String(entry.id);
+
+    const top = document.createElement('div');
+    top.className = 'upload-queue-item-top';
+
+    const name = document.createElement('span');
+    name.className = 'upload-queue-item-name';
+    name.textContent = entry.file.name;
+    name.title = entry.file.name;
+
+    const size = document.createElement('span');
+    size.className = 'upload-queue-item-size';
+    size.textContent = formatUploadSize(entry.file.size);
+
+    top.appendChild(name);
+    top.appendChild(size);
+
+    const progress = document.createElement('div');
+    progress.className = 'upload-queue-progress';
+    progress.setAttribute('role', 'progressbar');
+    progress.setAttribute('aria-valuemin', '0');
+    progress.setAttribute('aria-valuemax', '100');
+    progress.setAttribute('aria-valuenow', '0');
+    progress.setAttribute('aria-label', `Upload-Fortschritt für ${entry.file.name}`);
+
+    const fill = document.createElement('div');
+    fill.className = 'upload-queue-progress-fill';
+    progress.appendChild(fill);
+
+    const bottom = document.createElement('div');
+    bottom.className = 'upload-queue-item-bottom';
+
+    const status = document.createElement('span');
+    status.className = 'upload-queue-item-status';
+    status.textContent = 'Upload läuft…';
+
+    const retryBtn = document.createElement('button');
+    retryBtn.type = 'button';
+    retryBtn.className = 'upload-queue-item-retry hidden';
+    retryBtn.textContent = 'Erneut versuchen';
+    retryBtn.setAttribute('aria-label', `Upload von ${entry.file.name} erneut versuchen`);
+    retryBtn.addEventListener('click', () => retryUpload(entry.id));
+
+    bottom.appendChild(status);
+    bottom.appendChild(retryBtn);
+
+    const target = document.createElement('div');
+    target.className = 'upload-queue-item-target';
+    const targetLabel = entry.targetPath && entry.targetPath.length > 0 ? entry.targetPath : 'Start';
+    target.textContent = `Ziel: ${targetLabel}`;
+    target.title = target.textContent;
+
+    li.appendChild(top);
+    li.appendChild(progress);
+    li.appendChild(bottom);
+    li.appendChild(target);
+
+    entry.itemEl = li;
+    entry.progressEl = progress;
+    entry.progressFillEl = fill;
+    entry.statusEl = status;
+    entry.retryEl = retryBtn;
+
+    return li;
+}
+
+function setUploadStatus(entry, text, state) {
+    if (!entry || !entry.itemEl) return;
+    entry.itemEl.classList.remove('success', 'error');
+    if (state === 'success') entry.itemEl.classList.add('success');
+    if (state === 'error') entry.itemEl.classList.add('error');
+    if (entry.statusEl) entry.statusEl.textContent = text;
+    if (entry.retryEl) {
+        if (state === 'error') entry.retryEl.classList.remove('hidden');
+        else entry.retryEl.classList.add('hidden');
+    }
+}
+
+function startUpload(entry) {
+    entry.status = 'uploading';
+    setUploadStatus(entry, 'Upload läuft… 0%', 'uploading');
+    if (entry.progressFillEl) entry.progressFillEl.style.width = '0%';
+    if (entry.progressEl) entry.progressEl.setAttribute('aria-valuenow', '0');
+
+    const formData = new FormData();
+    formData.append('file', entry.file);
+    formData.append('targetPath', entry.targetPath);
+
+    const xhr = new XMLHttpRequest();
+    entry.xhr = xhr;
+
+    xhr.upload.addEventListener('progress', (e) => {
+        if (!e.lengthComputable) return;
+        const percent = Math.round((e.loaded / e.total) * 100);
+        if (entry.progressFillEl) entry.progressFillEl.style.width = percent + '%';
+        if (entry.progressEl) entry.progressEl.setAttribute('aria-valuenow', String(percent));
+        const loadedStr = formatUploadSize(e.loaded);
+        const totalStr = formatUploadSize(e.total);
+        if (entry.statusEl) entry.statusEl.textContent = `Upload läuft… ${percent}% (${loadedStr} / ${totalStr})`;
+    });
+
+    xhr.addEventListener('load', () => {
+        entry.xhr = null;
+        if (xhr.status >= 200 && xhr.status < 300) {
+            entry.status = 'success';
+            if (entry.progressFillEl) entry.progressFillEl.style.width = '100%';
+            if (entry.progressEl) entry.progressEl.setAttribute('aria-valuenow', '100');
+            setUploadStatus(entry, 'Fertig', 'success');
+            onUploadSuccess(entry);
+        } else {
+            let message = 'Fehler beim Upload';
+            try {
+                const data = JSON.parse(xhr.responseText);
+                if (data && data.error) message = data.error;
+            } catch (_) { /* ignore */ }
+            entry.status = 'error';
+            setUploadStatus(entry, 'Fehler: ' + message, 'error');
+        }
+    });
+
+    xhr.addEventListener('error', () => {
+        entry.xhr = null;
+        entry.status = 'error';
+        setUploadStatus(entry, 'Fehler: Verbindungsfehler', 'error');
+    });
+
+    xhr.addEventListener('abort', () => {
+        entry.xhr = null;
+        entry.status = 'error';
+        setUploadStatus(entry, 'Abgebrochen', 'error');
+    });
+
+    xhr.open('POST', '/api/admin/upload');
+    xhr.send(formData);
+}
+
+function onUploadSuccess(entry) {
+    // If user is still viewing the folder the file was uploaded into, refresh.
+    if (isGalleryVisible() && currentPath === entry.targetPath) {
+        loadImages(currentPath);
+    }
+}
+
+function retryUpload(id) {
+    const entry = uploadQueue.get(id);
+    if (!entry) return;
+    startUpload(entry);
+}
+
+function enqueueUpload(file, targetPath) {
+    const id = ++uploadIdCounter;
+    const entry = {
+        id,
+        file,
+        targetPath: targetPath || '',
+        status: 'queued',
+        xhr: null,
+        itemEl: null
+    };
+    uploadQueue.set(id, entry);
+    const li = createUploadItem(entry);
+    if (uploadQueueList) uploadQueueList.appendChild(li);
+    ensureUploadQueueVisible();
+    startUpload(entry);
+}
+
+function handleFiles(fileList) {
+    if (!canUpload()) return;
+    if (!fileList || fileList.length === 0) return;
+    const target = currentPath || '';
+    for (const file of fileList) {
+        enqueueUpload(file, target);
+    }
+}
+
+// Wire up the "+ Hochladen" button -> hidden file input
+if (uploadBtn && uploadFileInput) {
+    uploadBtn.addEventListener('click', () => {
+        if (!canUpload()) return;
+        uploadFileInput.value = '';
+        uploadFileInput.click();
+    });
+
+    uploadFileInput.addEventListener('change', (e) => {
+        const files = e.target.files;
+        if (files && files.length > 0) {
+            handleFiles(files);
+        }
+        uploadFileInput.value = '';
+    });
+}
+
+// Close / dismiss the upload queue card
+if (uploadQueueClose && uploadQueueCard) {
+    uploadQueueClose.addEventListener('click', () => {
+        uploadQueueCard.classList.add('hidden');
+        // Abort any in-flight uploads and drop finished entries
+        for (const entry of uploadQueue.values()) {
+            if (entry.xhr) {
+                try { entry.xhr.abort(); } catch (_) { /* ignore */ }
+            }
+        }
+        uploadQueue.clear();
+        if (uploadQueueList) uploadQueueList.innerHTML = '';
+    });
+}
+
+// Window-level drag & drop — guarded to only fire in the gallery view for uploaders
+function dragEventHasFiles(e) {
+    if (!e.dataTransfer) return false;
+    const types = e.dataTransfer.types;
+    if (!types) return false;
+    // types is a DOMStringList or Array; external file drags always contain 'Files'
+    // (Firefox may also expose 'application/x-moz-file').
+    for (let i = 0; i < types.length; i++) {
+        const t = types[i];
+        if (t === 'Files' || t === 'application/x-moz-file') return true;
+    }
+    return false;
+}
+
+window.addEventListener('dragenter', (e) => {
+    if (!canUpload() || !isGalleryVisible()) return;
+    if (!dragEventHasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    showDropOverlay();
+});
+
+window.addEventListener('dragover', (e) => {
+    if (!canUpload() || !isGalleryVisible()) return;
+    if (!dragEventHasFiles(e)) return;
+    // Must preventDefault on dragover at window level so browser doesn't
+    // navigate to the file when dropped.
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+});
+
+window.addEventListener('dragleave', (e) => {
+    if (!canUpload() || !isGalleryVisible()) return;
+    if (!dragEventHasFiles(e)) return;
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) hideDropOverlay();
+});
+
+window.addEventListener('drop', (e) => {
+    if (!canUpload() || !isGalleryVisible()) {
+        // Still prevent the browser from navigating away if a stray file drop occurs
+        if (dragEventHasFiles(e)) e.preventDefault();
+        return;
+    }
+    if (!dragEventHasFiles(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    hideDropOverlay();
+    const files = e.dataTransfer && e.dataTransfer.files;
+    if (files && files.length > 0) handleFiles(files);
+});
+
+// Safety: if the drag is cancelled (e.g. dropped outside window), reset state
+window.addEventListener('dragend', () => {
+    dragDepth = 0;
+    hideDropOverlay();
+});

@@ -69,6 +69,8 @@
                     <span id="item-count" class="item-count" aria-live="polite"></span>
                 </div>
                 <div class="toolbar-right">
+                    <button id="upload-btn" class="btn-primary hidden" aria-label="Dateien hochladen">+ Hochladen</button>
+                    <input type="file" id="upload-file-input" class="hidden" multiple accept="image/*,video/*" aria-hidden="true" tabindex="-1">
                     <button id="download-btn" class="btn-primary" disabled aria-label="Ausgewählte Bilder herunterladen">Ausgewählte herunterladen</button>
                     <button id="select-all-btn" class="btn-secondary" aria-label="Alle Bilder auswählen">Alle auswählen</button>
                     <button id="deselect-all-btn" class="btn-secondary" aria-label="Alle Bilder abwählen">Alle abwählen</button>
@@ -186,6 +188,24 @@
 
     <!-- Rubber-band selection overlay -->
     <div id="rubber-band" class="rubber-band hidden" aria-hidden="true"></div>
+
+    <!-- Drag-and-drop upload overlay -->
+    <div id="upload-drop-overlay" class="upload-drop-overlay hidden" aria-hidden="true">
+        <div class="upload-drop-message">
+            <div class="upload-drop-icon" aria-hidden="true">⬆</div>
+            <div class="upload-drop-title">Dateien hier ablegen zum Hochladen in:</div>
+            <div class="upload-drop-target" id="upload-drop-target">Start</div>
+        </div>
+    </div>
+
+    <!-- Upload progress queue card -->
+    <div id="upload-queue-card" class="upload-queue-card hidden" role="region" aria-label="Upload-Warteschlange">
+        <div class="upload-queue-header">
+            <span class="upload-queue-title" id="upload-queue-title">Uploads</span>
+            <button type="button" id="upload-queue-close" class="upload-queue-close" aria-label="Upload-Warteschlange schließen">×</button>
+        </div>
+        <ul id="upload-queue-list" class="upload-queue-list"></ul>
+    </div>
 
     <script src="dark-mode.js"></script>
     <script src="app.js"></script>
