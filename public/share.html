@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f5f7fa" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1a1a2e" media="(prefers-color-scheme: dark)">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Geteilte Medien - Einrad Bildergalerie</title>
+    <link rel="stylesheet" href="share.css">
+    <script src="dark-mode.js" defer></script>
+</head>
+<body>
+    <header class="share-header">
+        <div class="share-header-inner">
+            <img src="unicycle.png" class="share-logo" alt="" aria-hidden="true" width="40" height="40">
+            <h1 id="share-title">Geteilte Medien</h1>
+        </div>
+    </header>
+
+    <main class="share-main">
+        <div id="share-loading" class="share-state" role="status" aria-live="polite">
+            <div class="spinner" aria-hidden="true"></div>
+            <p>Wird geladen…</p>
+        </div>
+
+        <div id="share-error" class="share-state hidden" role="alert">
+            <div class="share-error-icon" aria-hidden="true">⚠</div>
+            <h2 id="share-error-title">Share-Link nicht verfügbar</h2>
+            <p id="share-error-message">Dieser Link ist ungültig oder abgelaufen.</p>
+        </div>
+
+        <section id="share-file-view" class="share-content hidden" aria-labelledby="share-file-name">
+            <h2 id="share-file-name" class="share-section-title"></h2>
+            <div class="share-file-wrapper">
+                <img id="share-image" class="share-media hidden" alt="">
+                <video id="share-video" class="share-media hidden" controls preload="metadata"></video>
+            </div>
+        </section>
+
+        <section id="share-folder-view" class="share-content hidden" aria-labelledby="share-folder-name">
+            <h2 id="share-folder-name" class="share-section-title"></h2>
+            <p id="share-folder-count" class="share-folder-count"></p>
+            <div id="share-grid" class="share-grid" role="list"></div>
+            <p id="share-folder-empty" class="share-empty hidden">Dieser Ordner enthält keine Medien.</p>
+        </section>
+    </main>
+
+    <div id="share-lightbox" class="share-lightbox hidden" role="dialog" aria-modal="true" aria-label="Vorschau">
+        <button id="share-lightbox-close" class="share-lightbox-close" aria-label="Schließen">&times;</button>
+        <button id="share-lightbox-prev" class="share-lightbox-nav share-lightbox-prev" aria-label="Vorheriges">&lsaquo;</button>
+        <button id="share-lightbox-next" class="share-lightbox-nav share-lightbox-next" aria-label="Nächstes">&rsaquo;</button>
+        <div class="share-lightbox-content">
+            <img id="share-lightbox-image" class="share-lightbox-media hidden" alt="">
+            <video id="share-lightbox-video" class="share-lightbox-media hidden" controls preload="metadata"></video>
+        </div>
+        <div id="share-lightbox-caption" class="share-lightbox-caption"></div>
+    </div>
+
+    <footer class="share-footer">
+        <p>Geteilt über Einrad Bildergalerie</p>
+    </footer>
+
+    <script src="share.js" defer></script>
+</body>
+</html>

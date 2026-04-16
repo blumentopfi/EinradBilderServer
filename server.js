@@ -42,6 +42,14 @@ const {
 
 const { getDatabase } = require('./lib/database');
 
+const {
+  createShareLink,
+  getShareLinkByToken,
+  isExpired,
+  listShareLinksByUser,
+  deleteShareLink
+} = require('./lib/shareManager');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const IMAGES_DIR = path.resolve(process.env.IMAGES_DIR || './media');
@@ -1309,6 +1317,292 @@ app.post('/api/admin/users/bulk', requireAdmin, (req, res) => {
   } catch (error) {
     console.error('Bulk user action error:', error);
     res.status(500).json({ error: 'Fehler bei Massen-Aktion' });
+  }
+});
+
+// ===== SHARE LINK API ENDPOINTS =====
+
+// Create a share link for a file or folder
+app.post('/api/share', requireAuth, async (req, res) => {
+  try {
+    const { path: targetPath, kind, expiresInHours } = req.body;
+
+    if (typeof targetPath !== 'string' || typeof kind !== 'string') {
+      return res.status(400).json({ error: 'Pfad und Typ erforderlich' });
+    }
+
+    if (!['file', 'folder'].includes(kind)) {
+      return res.status(400).json({ error: 'Typ muss "file" oder "folder" sein' });
+    }
+
+    // Validate path does not contain traversal
+    if (targetPath.includes('..') || targetPath.includes('\\')) {
+      return res.status(400).json({ error: 'Ungültiger Pfad' });
+    }
+
+    const absolutePath = resolveMediaPath(targetPath);
+    if (!absolutePath) {
+      return res.status(403).json({ error: 'Zugriff verweigert' });
+    }
+
+    // Verify path exists and is of the right kind
+    try {
+      const stat = await fs.stat(absolutePath);
+      if (kind === 'file' && !stat.isFile()) {
+        return res.status(400).json({ error: 'Pfad ist keine Datei' });
+      }
+      if (kind === 'folder' && !stat.isDirectory()) {
+        return res.status(400).json({ error: 'Pfad ist kein Ordner' });
+      }
+      if (kind === 'file' && !isMediaFile(path.basename(absolutePath))) {
+        return res.status(400).json({ error: 'Dateiformat nicht unterstützt' });
+      }
+    } catch {
+      return res.status(404).json({ error: 'Pfad nicht gefunden' });
+    }
+
+    const link = createShareLink(req.session.userId, targetPath, kind, expiresInHours);
+
+    const url = `${req.protocol}://${req.get('host')}/share/${link.token}`;
+
+    try {
+      logAudit(req.session.userId, 'SHARE_CREATE', null, JSON.stringify({
+        path: link.path,
+        kind: link.kind,
+        token: link.token
+      }));
+    } catch (err) {
+      console.error('Audit log error (SHARE_CREATE):', err);
+    }
+
+    res.json({
+      token: link.token,
+      url,
+      expiresAt: link.expiresAt
+    });
+  } catch (error) {
+    console.error('Create share link error:', error);
+    res.status(400).json({ error: error.message || 'Fehler beim Erstellen des Share-Links' });
+  }
+});
+
+// List the caller's own share links
+app.get('/api/share', requireAuth, (req, res) => {
+  try {
+    const rows = listShareLinksByUser(req.session.userId);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    const links = rows.map(row => ({
+      token: row.token,
+      path: row.path,
+      kind: row.kind,
+      createdAt: row.createdAt,
+      expiresAt: row.expiresAt,
+      url: `${baseUrl}/share/${row.token}`
+    }));
+
+    res.json({ links });
+  } catch (error) {
+    console.error('List share links error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der Share-Links' });
+  }
+});
+
+// Revoke a share link. Owner or admin may revoke.
+app.delete('/api/share/:token', requireAuth, (req, res) => {
+  try {
+    const { token } = req.params;
+
+    if (typeof token !== 'string' || !/^[a-f0-9]{32}$/.test(token)) {
+      return res.status(400).json({ error: 'Ungültiger Token' });
+    }
+
+    const link = getShareLinkByToken(token);
+    if (!link) {
+      return res.status(404).json({ error: 'Share-Link nicht gefunden' });
+    }
+
+    // Only owner or admin may revoke
+    if (link.createdBy !== req.session.userId && req.user.role !== 'admin') {
+      return res.status(403).json({ error: 'Zugriff verweigert' });
+    }
+
+    deleteShareLink(token);
+
+    try {
+      logAudit(req.session.userId, 'SHARE_DELETE', null, JSON.stringify({
+        path: link.path,
+        kind: link.kind,
+        token
+      }));
+    } catch (err) {
+      console.error('Audit log error (SHARE_DELETE):', err);
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete share link error:', error);
+    res.status(500).json({ error: 'Fehler beim Löschen des Share-Links' });
+  }
+});
+
+// ===== PUBLIC SHARE ENDPOINTS (no auth) =====
+
+// Serve the public share viewer page. Invalid tokens still get the page;
+// the client calls /api/share/:token/data to show an error state. This keeps
+// the token check in one place and matches the "plain 404 page" behaviour
+// naturally when data fetch returns 404 or 410.
+app.get('/share/:token', (req, res) => {
+  const { token } = req.params;
+
+  if (typeof token !== 'string' || !/^[a-f0-9]{32}$/.test(token)) {
+    return res.status(404).sendFile(path.join(__dirname, 'public', 'share.html'));
+  }
+
+  res.sendFile(path.join(__dirname, 'public', 'share.html'));
+});
+
+// Public JSON data for a share token
+app.get('/api/share/:token/data', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const link = getShareLinkByToken(token);
+
+    if (!link) {
+      return res.status(404).json({ error: 'Share-Link nicht gefunden' });
+    }
+
+    if (isExpired(link)) {
+      return res.status(410).json({ error: 'Share-Link abgelaufen' });
+    }
+
+    const absolutePath = resolveMediaPath(link.path);
+    if (!absolutePath) {
+      return res.status(404).json({ error: 'Datei nicht gefunden' });
+    }
+
+    try {
+      await fs.access(absolutePath);
+    } catch {
+      return res.status(404).json({ error: 'Datei nicht gefunden' });
+    }
+
+    const displayName = path.basename(link.path) || 'Bildergalerie';
+
+    if (link.kind === 'file') {
+      return res.json({
+        kind: 'file',
+        path: link.path,
+        displayName,
+        type: isVideoFile(link.path) ? 'video' : 'image',
+        expiresAt: link.expiresAt
+      });
+    }
+
+    // Folder: enumerate files (non-recursive, like /api/browse)
+    let entries;
+    try {
+      entries = await fs.readdir(absolutePath, { withFileTypes: true });
+    } catch {
+      return res.status(404).json({ error: 'Ordner nicht lesbar' });
+    }
+
+    const files = [];
+    for (const entry of entries) {
+      if (entry.name.startsWith('.')) continue;
+      if (entry.isFile() && isMediaFile(entry.name)) {
+        files.push({
+          name: entry.name,
+          type: isVideoFile(entry.name) ? 'video' : 'image'
+        });
+      }
+    }
+    files.sort((a, b) => a.name.localeCompare(b.name));
+
+    res.json({
+      kind: 'folder',
+      path: link.path,
+      displayName,
+      files,
+      expiresAt: link.expiresAt
+    });
+  } catch (error) {
+    console.error('Share data error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden des Share-Links' });
+  }
+});
+
+// Public media file for a share token.
+// For file shares: the requested filename must match the basename of the share path.
+// For folder shares: the requested relative path must resolve to a file directly in that folder.
+app.get('/api/share/:token/media/*', async (req, res) => {
+  try {
+    const { token } = req.params;
+    const requestedRelative = req.params[0] || '';
+
+    if (requestedRelative.includes('..') || requestedRelative.includes('\\')) {
+      return res.status(403).json({ error: 'Zugriff verweigert' });
+    }
+
+    const link = getShareLinkByToken(token);
+    if (!link) {
+      return res.status(404).json({ error: 'Share-Link nicht gefunden' });
+    }
+
+    if (isExpired(link)) {
+      return res.status(410).json({ error: 'Share-Link abgelaufen' });
+    }
+
+    const linkAbsolute = resolveMediaPath(link.path);
+    if (!linkAbsolute) {
+      return res.status(404).json({ error: 'Datei nicht gefunden' });
+    }
+
+    let fileAbsolute;
+
+    if (link.kind === 'file') {
+      // The requested relative must be just the file's basename
+      const expectedName = path.basename(link.path);
+      if (requestedRelative !== expectedName) {
+        return res.status(404).json({ error: 'Datei nicht gefunden' });
+      }
+      fileAbsolute = linkAbsolute;
+    } else {
+      // Folder share: resolve inside the folder, only direct children allowed
+      if (requestedRelative.length === 0) {
+        return res.status(400).json({ error: 'Dateiname erforderlich' });
+      }
+      if (requestedRelative.includes('/')) {
+        // Restrict to direct children of the shared folder
+        return res.status(403).json({ error: 'Zugriff verweigert' });
+      }
+
+      fileAbsolute = path.join(linkAbsolute, requestedRelative);
+      const normalized = path.normalize(fileAbsolute);
+
+      // Must stay inside the shared folder
+      const folderWithSep = linkAbsolute.endsWith(path.sep) ? linkAbsolute : linkAbsolute + path.sep;
+      if (!normalized.startsWith(folderWithSep)) {
+        return res.status(403).json({ error: 'Zugriff verweigert' });
+      }
+      fileAbsolute = normalized;
+    }
+
+    // Must be a supported media file
+    if (!isMediaFile(path.basename(fileAbsolute))) {
+      return res.status(403).json({ error: 'Zugriff verweigert' });
+    }
+
+    try {
+      await fs.access(fileAbsolute);
+    } catch {
+      return res.status(404).json({ error: 'Datei nicht gefunden' });
+    }
+
+    res.sendFile(fileAbsolute);
+  } catch (error) {
+    console.error('Share media error:', error);
+    res.status(500).json({ error: 'Fehler beim Laden der Datei' });
   }
 });
 
