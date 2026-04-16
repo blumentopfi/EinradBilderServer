@@ -43,6 +43,11 @@
                     <button id="gallery-nav-btn" class="btn-nav active" aria-current="page">Galerie</button>
                     <button id="admin-btn" class="btn-nav hidden">Admin</button>
                     <button id="faq-btn" class="btn-nav">FAQ</button>
+                    <button id="global-search-btn" class="btn-global-search" aria-label="Globale Suche (/ oder Ctrl+K)" title="Globale Suche (/ oder Ctrl+K)">
+                        <span class="global-search-icon" aria-hidden="true">🔍</span>
+                        <span class="global-search-label">Suche</span>
+                        <span class="global-search-kbd" aria-hidden="true"><kbd>/</kbd></span>
+                    </button>
                     <button id="dark-mode-toggle" class="btn-dark-mode" aria-label="Dunkelmodus umschalten" title="Dunkelmodus umschalten">
                         <span class="dark-mode-icon" aria-hidden="true"></span>
                     </button>
@@ -182,7 +187,48 @@
                     <dt><kbd>?</kbd></dt>
                     <dd>Diese Hilfe anzeigen</dd>
                 </div>
+                <div class="shortcut-row">
+                    <dt><kbd>/</kbd> oder <kbd>Strg</kbd> + <kbd>K</kbd></dt>
+                    <dd>Globale Suche öffnen</dd>
+                </div>
             </dl>
+        </div>
+    </div>
+
+    <!-- Global Search Palette -->
+    <div id="search-palette" class="search-palette hidden" role="dialog" aria-modal="true" aria-labelledby="search-palette-title">
+        <h2 id="search-palette-title" class="sr-only">Globale Suche</h2>
+        <div class="search-palette-card" role="document">
+            <div class="search-palette-input-row">
+                <span class="search-palette-icon" aria-hidden="true">🔍</span>
+                <input
+                    type="search"
+                    id="search-palette-input"
+                    class="search-palette-input"
+                    placeholder="Dateien und FAQ durchsuchen…"
+                    aria-label="Suchbegriff eingeben"
+                    aria-controls="search-palette-results"
+                    aria-autocomplete="list"
+                    autocomplete="off"
+                    spellcheck="false"
+                >
+                <span class="search-palette-status" id="search-palette-status" aria-live="polite"></span>
+                <button type="button" id="search-palette-close" class="search-palette-close" aria-label="Suche schließen">&times;</button>
+            </div>
+            <div
+                id="search-palette-results"
+                class="search-palette-results"
+                role="listbox"
+                aria-label="Suchergebnisse"
+                tabindex="-1"
+            >
+                <div class="search-palette-hint">Geben Sie mindestens 2 Zeichen ein, um zu suchen.</div>
+            </div>
+            <div class="search-palette-footer">
+                <span><kbd>↑</kbd> <kbd>↓</kbd> Navigieren</span>
+                <span><kbd>Enter</kbd> Öffnen</span>
+                <span><kbd>Esc</kbd> Schließen</span>
+            </div>
         </div>
     </div>
 

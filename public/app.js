@@ -428,11 +428,35 @@ async function loadImages(path = '') {
         // Update cache for this path's folders (they are siblings of any child)
         breadcrumbSiblingCache.set(currentPath || '', folders);
         renderGallery();
+
+        // Honor a pending #preview=<path> hash set by the global search palette.
+        // The hash is consumed (cleared) so reloads don't reopen the preview.
+        maybeOpenPendingPreview();
     } catch (error) {
         errorMessage.textContent = 'Medien konnten nicht geladen werden';
         log('Load media error:', error);
     } finally {
         loading.classList.add('hidden');
+    }
+}
+
+// Check for a pending preview target in the URL hash. If the target file lives
+// in the current folder, open the preview and clear the hash.
+function maybeOpenPendingPreview() {
+    const hash = window.location.hash || '';
+    const match = hash.match(/^#preview=(.+)$/);
+    if (!match) return;
+    let target;
+    try {
+        target = decodeURIComponent(match[1]);
+    } catch {
+        return;
+    }
+    const idx = images.findIndex(img => img.path === target);
+    if (idx >= 0) {
+        // Clear hash without triggering navigation
+        history.replaceState(null, '', window.location.pathname + window.location.search);
+        openPreview(idx);
     }
 }
 
@@ -1880,3 +1904,411 @@ window.addEventListener('dragend', () => {
     dragDepth = 0;
     hideDropOverlay();
 });
+
+// ============================================
+// Global search palette (command palette)
+// ============================================
+(function initGlobalSearch() {
+    const palette = document.getElementById('search-palette');
+    const paletteInput = document.getElementById('search-palette-input');
+    const paletteResults = document.getElementById('search-palette-results');
+    const paletteStatus = document.getElementById('search-palette-status');
+    const paletteClose = document.getElementById('search-palette-close');
+    const openBtn = document.getElementById('global-search-btn');
+
+    if (!palette || !paletteInput || !paletteResults) return;
+
+    // Active selection index within the flat list of result rows.
+    // -1 means no row selected yet.
+    let activeIndex = -1;
+    // Current flat list of result entries used for keyboard navigation + Enter.
+    // Each entry: { kind: 'file'|'faq', data: {...} }
+    let currentEntries = [];
+    // Latest request token to discard stale responses
+    let requestToken = 0;
+
+    function isPaletteOpen() {
+        return !palette.classList.contains('hidden');
+    }
+
+    function openPalette() {
+        if (isPaletteOpen()) return;
+        palette.classList.remove('hidden');
+        paletteInput.value = '';
+        activeIndex = -1;
+        currentEntries = [];
+        renderHint();
+        if (paletteStatus) paletteStatus.textContent = '';
+        // Autofocus on next frame so animation starts cleanly
+        requestAnimationFrame(() => {
+            paletteInput.focus();
+        });
+    }
+
+    function closePalette() {
+        if (!isPaletteOpen()) return;
+        palette.classList.add('hidden');
+        paletteInput.value = '';
+        paletteResults.innerHTML = '';
+        activeIndex = -1;
+        currentEntries = [];
+        if (paletteStatus) paletteStatus.textContent = '';
+    }
+
+    function renderHint() {
+        paletteResults.innerHTML = '';
+        const hint = document.createElement('div');
+        hint.className = 'search-palette-hint';
+        hint.textContent = 'Geben Sie mindestens 2 Zeichen ein, um zu suchen.';
+        paletteResults.appendChild(hint);
+    }
+
+    function renderLoading() {
+        paletteResults.innerHTML = '';
+        const el = document.createElement('div');
+        el.className = 'search-palette-loading';
+        el.textContent = 'Suchen…';
+        paletteResults.appendChild(el);
+    }
+
+    function renderEmpty(query) {
+        paletteResults.innerHTML = '';
+        const el = document.createElement('div');
+        el.className = 'search-palette-empty';
+        el.textContent = `Keine Ergebnisse für „${query}“`;
+        paletteResults.appendChild(el);
+    }
+
+    function renderError(message) {
+        paletteResults.innerHTML = '';
+        const el = document.createElement('div');
+        el.className = 'search-palette-error';
+        el.textContent = message;
+        paletteResults.appendChild(el);
+    }
+
+    function getFolderFromPath(filePath) {
+        const idx = filePath.lastIndexOf('/');
+        return idx >= 0 ? filePath.substring(0, idx) : '';
+    }
+
+    function fileIcon(type) {
+        return type === 'video' ? '🎬' : '🖼';
+    }
+
+    function renderResults(data, query) {
+        paletteResults.innerHTML = '';
+        currentEntries = [];
+        activeIndex = -1;
+
+        const files = Array.isArray(data.files) ? data.files : [];
+        const faq = Array.isArray(data.faq) ? data.faq : [];
+
+        if (files.length === 0 && faq.length === 0) {
+            renderEmpty(query);
+            return;
+        }
+
+        // Files section
+        if (files.length > 0) {
+            const section = document.createElement('div');
+            section.className = 'search-palette-section';
+
+            const title = document.createElement('div');
+            title.className = 'search-palette-section-title';
+            title.textContent = `Dateien (${files.length})`;
+            section.appendChild(title);
+
+            files.forEach(file => {
+                const entry = { kind: 'file', data: file };
+                const row = buildResultRow({
+                    icon: fileIcon(file.type),
+                    name: file.name,
+                    context: getFolderFromPath(file.path) || 'Start',
+                    entry
+                });
+                section.appendChild(row);
+                currentEntries.push({ ...entry, element: row });
+            });
+
+            paletteResults.appendChild(section);
+        }
+
+        // FAQ section
+        if (faq.length > 0) {
+            const section = document.createElement('div');
+            section.className = 'search-palette-section';
+
+            const title = document.createElement('div');
+            title.className = 'search-palette-section-title';
+            title.textContent = `FAQ (${faq.length})`;
+            section.appendChild(title);
+
+            faq.forEach(item => {
+                const entry = { kind: 'faq', data: item };
+                const row = buildResultRow({
+                    icon: '❓',
+                    name: item.question || '(ohne Titel)',
+                    context: item.category ? `Kategorie: ${item.category}` : 'FAQ',
+                    entry
+                });
+                section.appendChild(row);
+                currentEntries.push({ ...entry, element: row });
+            });
+
+            paletteResults.appendChild(section);
+        }
+
+        // Select first row by default for immediate Enter-to-go
+        if (currentEntries.length > 0) {
+            setActiveIndex(0, false);
+        }
+    }
+
+    function buildResultRow({ icon, name, context, entry }) {
+        const row = document.createElement('button');
+        row.type = 'button';
+        row.className = 'search-palette-result';
+        row.setAttribute('role', 'option');
+        row.setAttribute('aria-selected', 'false');
+
+        const iconEl = document.createElement('span');
+        iconEl.className = 'search-palette-result-icon';
+        iconEl.setAttribute('aria-hidden', 'true');
+        iconEl.textContent = icon;
+        row.appendChild(iconEl);
+
+        const body = document.createElement('span');
+        body.className = 'search-palette-result-body';
+
+        const nameEl = document.createElement('span');
+        nameEl.className = 'search-palette-result-name';
+        nameEl.textContent = name;
+        body.appendChild(nameEl);
+
+        const ctxEl = document.createElement('span');
+        ctxEl.className = 'search-palette-result-context';
+        ctxEl.textContent = context;
+        body.appendChild(ctxEl);
+
+        row.appendChild(body);
+
+        row.addEventListener('click', () => activate(entry));
+        row.addEventListener('mouseenter', () => {
+            const idx = currentEntries.findIndex(e => e.element === row);
+            if (idx >= 0) setActiveIndex(idx, false);
+        });
+
+        return row;
+    }
+
+    function setActiveIndex(index, scrollIntoView) {
+        if (currentEntries.length === 0) {
+            activeIndex = -1;
+            return;
+        }
+        if (index < 0) index = 0;
+        if (index >= currentEntries.length) index = currentEntries.length - 1;
+        activeIndex = index;
+
+        currentEntries.forEach((e, i) => {
+            if (i === activeIndex) {
+                e.element.classList.add('is-active');
+                e.element.setAttribute('aria-selected', 'true');
+                if (scrollIntoView) {
+                    e.element.scrollIntoView({ block: 'nearest' });
+                }
+            } else {
+                e.element.classList.remove('is-active');
+                e.element.setAttribute('aria-selected', 'false');
+            }
+        });
+    }
+
+    function activate(entry) {
+        if (!entry) return;
+        if (entry.kind === 'file') {
+            const file = entry.data;
+            const folder = getFolderFromPath(file.path);
+            // Set hash so loadImages can open the preview once the folder loads
+            try {
+                history.replaceState(null, '', `#preview=${encodeURIComponent(file.path)}`);
+            } catch {
+                window.location.hash = `preview=${encodeURIComponent(file.path)}`;
+            }
+            closePalette();
+            if (folder === currentPath) {
+                // Already in the right folder — open preview immediately
+                maybeOpenPendingPreview();
+            } else {
+                loadImages(folder);
+            }
+        } else if (entry.kind === 'faq') {
+            const item = entry.data;
+            closePalette();
+            const id = item && item.id ? encodeURIComponent(item.id) : '';
+            window.location.href = `/faq.html${id ? `?highlight=${id}` : ''}`;
+        }
+    }
+
+    async function runSearch(query) {
+        const token = ++requestToken;
+        renderLoading();
+        if (paletteStatus) paletteStatus.textContent = '…';
+
+        try {
+            const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+
+            // Discard if newer query superseded this one
+            if (token !== requestToken) return;
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    renderError('Nicht authentifiziert. Bitte erneut anmelden.');
+                } else if (response.status === 400) {
+                    renderHint();
+                } else {
+                    renderError('Fehler bei der Suche');
+                }
+                if (paletteStatus) paletteStatus.textContent = '';
+                return;
+            }
+
+            const data = await response.json();
+            if (token !== requestToken) return;
+
+            renderResults(data, query);
+            if (paletteStatus) {
+                const total = (data.files ? data.files.length : 0) + (data.faq ? data.faq.length : 0);
+                paletteStatus.textContent = total > 0 ? `${total}` : '';
+            }
+        } catch (err) {
+            if (token !== requestToken) return;
+            log('Search error:', err);
+            renderError('Fehler bei der Suche');
+            if (paletteStatus) paletteStatus.textContent = '';
+        }
+    }
+
+    const debouncedSearch = debounce((query) => {
+        runSearch(query);
+    }, 250);
+
+    paletteInput.addEventListener('input', (e) => {
+        const value = e.target.value.trim();
+        if (value.length < 2) {
+            // Reset state — don't hit the server
+            requestToken++; // invalidate any in-flight request
+            currentEntries = [];
+            activeIndex = -1;
+            if (paletteStatus) paletteStatus.textContent = '';
+            renderHint();
+            return;
+        }
+        debouncedSearch(value);
+    });
+
+    // Keyboard navigation within the palette
+    paletteInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            e.stopPropagation();
+            closePalette();
+            return;
+        }
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (currentEntries.length > 0) {
+                setActiveIndex(activeIndex + 1, true);
+            }
+            return;
+        }
+        if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (currentEntries.length > 0) {
+                setActiveIndex(activeIndex - 1, true);
+            }
+            return;
+        }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            if (activeIndex >= 0 && activeIndex < currentEntries.length) {
+                activate(currentEntries[activeIndex]);
+            }
+            return;
+        }
+        if (e.key === 'Home' && currentEntries.length > 0) {
+            e.preventDefault();
+            setActiveIndex(0, true);
+            return;
+        }
+        if (e.key === 'End' && currentEntries.length > 0) {
+            e.preventDefault();
+            setActiveIndex(currentEntries.length - 1, true);
+            return;
+        }
+    });
+
+    // Click on backdrop closes the palette
+    palette.addEventListener('click', (e) => {
+        if (e.target === palette) closePalette();
+    });
+
+    if (paletteClose) {
+        paletteClose.addEventListener('click', () => closePalette());
+    }
+
+    if (openBtn) {
+        openBtn.addEventListener('click', () => {
+            if (isPaletteOpen()) {
+                closePalette();
+            } else {
+                openPalette();
+            }
+        });
+    }
+
+    // Determine whether an element swallows typing keys (so we don't steal `/`)
+    function isTypingTarget(el) {
+        if (!el) return false;
+        const tag = el.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+        if (el.isContentEditable) return true;
+        return false;
+    }
+
+    function anyModalOpen() {
+        if (previewModal && !previewModal.classList.contains('hidden')) return true;
+        if (changePasswordModal && !changePasswordModal.classList.contains('hidden')) return true;
+        if (shortcutsModal && !shortcutsModal.classList.contains('hidden')) return true;
+        return false;
+    }
+
+    // Global keyboard: `/` and Ctrl/Cmd+K open the palette
+    document.addEventListener('keydown', (e) => {
+        // Ctrl/Cmd+K from anywhere (except while another modal is active)
+        if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === 'k' || e.key === 'K')) {
+            // Don't fight browsers' own chord in form fields that truly need it — but
+            // for our app, Ctrl+K has no other meaning, so take it everywhere.
+            if (isPaletteOpen()) {
+                // Toggle off
+                e.preventDefault();
+                closePalette();
+                return;
+            }
+            if (anyModalOpen()) return;
+            e.preventDefault();
+            openPalette();
+            return;
+        }
+
+        // `/` only when not typing and no other modal is open
+        if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            if (isPaletteOpen()) return; // let the input receive `/`
+            if (isTypingTarget(e.target)) return;
+            if (anyModalOpen()) return;
+            e.preventDefault();
+            openPalette();
+        }
+    });
+})();

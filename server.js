@@ -1051,6 +1051,100 @@ app.delete('/api/faq/:itemId', requireAdmin, (req, res) => {
   }
 });
 
+// ===== GLOBAL SEARCH ENDPOINT =====
+
+// Recursively walk IMAGES_DIR to collect every media file for filename search.
+// TODO: consider indexing for large libraries
+async function walkAllMediaFiles(rootDir) {
+  const results = [];
+
+  async function walk(dir, relative) {
+    let entries;
+    try {
+      entries = await fs.readdir(dir, { withFileTypes: true });
+    } catch (err) {
+      return; // skip unreadable directories
+    }
+
+    for (const entry of entries) {
+      // Skip hidden entries
+      if (entry.name.startsWith('.')) continue;
+      // Skip symlinks to avoid cycles
+      if (entry.isSymbolicLink()) continue;
+
+      const full = path.join(dir, entry.name);
+      const rel = relative ? `${relative}/${entry.name}` : entry.name;
+
+      if (entry.isDirectory()) {
+        await walk(full, rel);
+      } else if (entry.isFile() && isMediaFile(entry.name)) {
+        results.push({
+          name: entry.name,
+          path: rel,
+          type: isVideoFile(entry.name) ? 'video' : 'image'
+        });
+      }
+    }
+  }
+
+  try {
+    await walk(rootDir, '');
+  } catch (err) {
+    console.error('Search walk error:', err);
+  }
+
+  return results;
+}
+
+// Global search across media filenames and FAQ items
+app.get('/api/search', requireAuth, async (req, res) => {
+  try {
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+
+    if (q.length < 2) {
+      return res.status(400).json({ error: 'Suchanfrage muss mindestens 2 Zeichen lang sein' });
+    }
+
+    const needle = q.toLowerCase();
+
+    // Files: recursive walk, substring match on filename (case-insensitive)
+    const allFiles = await walkAllMediaFiles(IMAGES_DIR);
+    const matchedFiles = [];
+    for (const f of allFiles) {
+      if (f.name.toLowerCase().includes(needle)) {
+        matchedFiles.push(f);
+        if (matchedFiles.length >= 20) break;
+      }
+    }
+
+    // FAQ: match against question, answer, category
+    const faqItems = getAllFaqItems();
+    const matchedFaq = [];
+    for (const item of faqItems) {
+      const question = (item.question || '').toLowerCase();
+      const answer = (item.answer || '').toLowerCase();
+      const category = (item.category || '').toLowerCase();
+      if (
+        question.includes(needle) ||
+        answer.includes(needle) ||
+        category.includes(needle)
+      ) {
+        matchedFaq.push({
+          id: item.id,
+          question: item.question,
+          category: item.category
+        });
+        if (matchedFaq.length >= 20) break;
+      }
+    }
+
+    res.json({ files: matchedFiles, faq: matchedFaq });
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ error: 'Fehler bei der Suche' });
+  }
+});
+
 // ===== FAVORITES API ENDPOINTS =====
 
 // Get the authenticated user's favorites
