@@ -1170,3 +1170,368 @@ header h1 {
     gap: 10px;
     margin-top: 30px;
 }
+
+/* ============================================
+   Dark Mode Toggle Button
+   ============================================ */
+.btn-dark-mode {
+    background: transparent;
+    border: 1px solid var(--color-border);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    padding: 0;
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.btn-dark-mode:hover {
+    background: rgba(255, 107, 53, 0.1);
+    border-color: var(--color-primary);
+    transform: scale(1.1);
+}
+
+.dark-mode-icon::after {
+    content: '\263D';
+}
+
+[data-theme="dark"] .dark-mode-icon::after {
+    content: '\2600';
+}
+
+/* ============================================
+   Password Visibility Toggle
+   ============================================ */
+.password-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.password-input-wrapper input[type="password"],
+.password-input-wrapper input[type="text"] {
+    width: 100%;
+    padding-right: 50px;
+}
+
+.toggle-password-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 8px;
+    font-size: 18px;
+    color: var(--color-text-muted);
+    transition: color var(--transition-fast);
+    line-height: 1;
+    border-radius: 4px;
+}
+
+.toggle-password-btn:hover {
+    color: var(--color-primary);
+}
+
+.eye-icon::after {
+    content: '\1F441';
+}
+
+.eye-icon.visible::after {
+    content: '\1F440';
+}
+
+/* ============================================
+   Login Animated Gradient Background
+   ============================================ */
+#login-screen {
+    background: linear-gradient(-45deg, #f5f7fa, #fff4ed, #f5f7fa, #fff0e6);
+    background-size: 400% 400%;
+    animation: loginGradient 15s ease infinite;
+}
+
+@keyframes loginGradient {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* ============================================
+   Dark Mode Color Scheme
+   ============================================ */
+[data-theme="dark"] {
+    --color-bg: #1a1a2e;
+    --color-text: #e0e0e0;
+    --color-text-muted: #a0a0a0;
+    --color-border: #2a2a4a;
+    --color-error: #ff6b6b;
+    --color-success: #2ecc71;
+
+    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 15px 35px rgba(255, 107, 53, 0.2);
+    --shadow-xl: 0 10px 50px rgba(0, 0, 0, 0.7);
+}
+
+/* Body & background */
+[data-theme="dark"] body {
+    background: #1a1a2e;
+    color: #e0e0e0;
+}
+
+/* Login screen dark mode */
+[data-theme="dark"] #login-screen {
+    background: linear-gradient(-45deg, #1a1a2e, #1f1a2e, #1a1a2e, #261a2e);
+    background-size: 400% 400%;
+    animation: loginGradientDark 15s ease infinite;
+}
+
+@keyframes loginGradientDark {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+[data-theme="dark"] .login-container {
+    background: #16213e;
+    border-color: #2a2a4a;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="password"] {
+    background: rgba(26, 26, 46, 0.8);
+    color: #e0e0e0;
+    border-color: #2a2a4a;
+}
+
+[data-theme="dark"] input[type="text"]:focus,
+[data-theme="dark"] input[type="password"]:focus {
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+}
+
+[data-theme="dark"] input[type="text"]::placeholder,
+[data-theme="dark"] input[type="password"]::placeholder {
+    color: #666;
+}
+
+/* Header */
+[data-theme="dark"] header {
+    background: #16213e;
+    border-bottom-color: #2a2a4a;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Gallery toolbar */
+[data-theme="dark"] .gallery-toolbar {
+    background: #16213e;
+    border-bottom-color: #2a2a4a;
+}
+
+/* Buttons */
+[data-theme="dark"] .btn-secondary {
+    background: #2a2a4a;
+    color: #e0e0e0;
+    border-color: #3a3a5a;
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+    background: #3a3a5a;
+    border-color: #4a4a6a;
+}
+
+[data-theme="dark"] .btn-primary:disabled {
+    background: #2a2a4a;
+    color: #666;
+}
+
+/* Nav buttons */
+[data-theme="dark"] .btn-nav {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .btn-nav:hover {
+    color: var(--color-primary);
+    background: rgba(255, 107, 53, 0.1);
+}
+
+[data-theme="dark"] .btn-nav.active {
+    color: var(--color-primary);
+}
+
+/* User menu */
+[data-theme="dark"] .user-menu-btn {
+    background: rgba(255, 107, 53, 0.15);
+    border-color: rgba(255, 107, 53, 0.3);
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .user-menu-btn:hover {
+    background: rgba(255, 107, 53, 0.25);
+}
+
+[data-theme="dark"] .user-menu-btn #user-info {
+    color: #c0c0c0;
+}
+
+[data-theme="dark"] .user-dropdown {
+    background: #16213e;
+    border-color: #2a2a4a;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .dropdown-item {
+    background: #16213e;
+    color: #e0e0e0;
+    border-bottom-color: #2a2a4a;
+}
+
+[data-theme="dark"] .dropdown-item:hover {
+    background: #1a1a2e;
+}
+
+/* Cards */
+[data-theme="dark"] .image-card {
+    background: #16213e;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .image-card:hover {
+    box-shadow: 0 15px 35px rgba(255, 107, 53, 0.2);
+    border-color: rgba(255, 107, 53, 0.4);
+}
+
+[data-theme="dark"] .image-name {
+    color: #e0e0e0;
+    background: linear-gradient(to bottom, rgba(22, 33, 62, 0) 0%, rgba(255, 107, 53, 0.05) 100%);
+}
+
+[data-theme="dark"] .image-wrapper {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+}
+
+[data-theme="dark"] .checkbox-overlay {
+    background: rgba(22, 33, 62, 0.95);
+    border-color: #f7931e;
+}
+
+/* Folder cards */
+[data-theme="dark"] .folder-card {
+    background: #16213e;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .folder-card:hover {
+    box-shadow: 0 15px 35px rgba(247, 147, 30, 0.2);
+    border-color: rgba(247, 147, 30, 0.4);
+}
+
+[data-theme="dark"] .folder-name {
+    color: #e0e0e0;
+}
+
+/* Breadcrumb */
+[data-theme="dark"] .breadcrumb-separator {
+    color: #3a3a5a;
+}
+
+/* Loading */
+[data-theme="dark"] .loading {
+    color: #a0a0a0;
+}
+
+[data-theme="dark"] .image-wrapper.loading {
+    background: linear-gradient(90deg, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%);
+    background-size: 200% 100%;
+}
+
+/* Empty state */
+[data-theme="dark"] .gallery p {
+    color: #a0a0a0;
+    background: #16213e;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+/* Media error */
+[data-theme="dark"] .media-error {
+    background: rgba(22, 33, 62, 0.95);
+}
+
+/* Modal */
+[data-theme="dark"] .modal {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="dark"] .nav-btn:disabled {
+    background: #2a2a4a;
+}
+
+/* Change Password Modal */
+[data-theme="dark"] #change-password-modal .modal-content {
+    background: #16213e;
+    border: 1px solid #2a2a4a;
+    border-radius: 15px;
+    padding: 30px;
+}
+
+[data-theme="dark"] #change-password-modal h2 {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .form-group label {
+    color: #c0c0c0;
+}
+
+[data-theme="dark"] .form-group input,
+[data-theme="dark"] .form-group textarea,
+[data-theme="dark"] .form-group select {
+    background: rgba(26, 26, 46, 0.8);
+    color: #e0e0e0;
+    border-color: #2a2a4a;
+}
+
+[data-theme="dark"] .form-group input:focus,
+[data-theme="dark"] .form-group textarea:focus,
+[data-theme="dark"] .form-group select:focus {
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+}
+
+/* Selected count badge */
+[data-theme="dark"] #selected-count {
+    color: #ff6b35;
+    background: rgba(255, 107, 53, 0.15);
+}
+
+/* Dark mode toggle in dark mode */
+[data-theme="dark"] .btn-dark-mode {
+    border-color: #2a2a4a;
+}
+
+[data-theme="dark"] .btn-dark-mode:hover {
+    background: rgba(255, 107, 53, 0.15);
+    border-color: var(--color-primary);
+}
+
+/* Prefers dark color scheme fallback (auto-detect) */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]):not([data-theme="dark"]) {
+        --color-bg: #1a1a2e;
+        --color-text: #e0e0e0;
+        --color-text-muted: #a0a0a0;
+        --color-border: #2a2a4a;
+        --color-error: #ff6b6b;
+        --color-success: #2ecc71;
+
+        --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
+        --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.4);
+        --shadow-lg: 0 15px 35px rgba(255, 107, 53, 0.2);
+        --shadow-xl: 0 10px 50px rgba(0, 0, 0, 0.7);
+    }
+}
