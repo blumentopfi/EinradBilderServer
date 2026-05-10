@@ -634,13 +634,13 @@
 }
 
 [data-theme="dark"] .admin-header {
-    background: var(--color-surface);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
+    background: var(--color-bg);
+    box-shadow: none;
     border-bottom: 1px solid var(--color-border);
 }
 
 [data-theme="dark"] .admin-tabs {
-    background: var(--color-surface);
+    background: var(--color-bg);
     border-bottom-color: var(--color-border);
 }
 
@@ -1192,23 +1192,24 @@
 /* ===== Dark mode overrides ===== */
 
 [data-theme="dark"] #admin-panel {
-    background: #1a1d23;
-    color: #e8e9ec;
+    background: var(--color-bg);
+    color: var(--color-text);
 }
 
 [data-theme="dark"] .admin-header,
 [data-theme="dark"] .admin-tabs {
-    background: #22262e;
-    color: #e8e9ec;
-    border-bottom-color: #2d323c;
+    background: var(--color-bg);
+    color: var(--color-text);
+    border-bottom-color: var(--color-border);
 }
 
 [data-theme="dark"] .tab-btn {
-    color: #b0b4bd;
+    color: var(--color-text-soft);
 }
 
 [data-theme="dark"] .tab-btn:hover {
-    background: rgba(208, 74, 24, 0.12);
+    background: transparent;
+    color: var(--color-text);
 }
 
 [data-theme="dark"] .stat-card,
