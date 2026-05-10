@@ -2372,14 +2372,14 @@ body.rubber-banding .folder-card {
 
 /* Buttons */
 [data-theme="dark"] .btn-secondary {
-    background: #2a2a4a;
-    color: #e0e0e0;
-    border-color: #3a3a5a;
+    background: transparent;
+    color: var(--color-text);
+    border-color: var(--color-border);
 }
 
 [data-theme="dark"] .btn-secondary:hover {
-    background: #3a3a5a;
-    border-color: #4a4a6a;
+    background: var(--color-surface-alt);
+    border-color: var(--color-text-soft);
 }
 
 [data-theme="dark"] .btn-primary:disabled {
