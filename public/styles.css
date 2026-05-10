@@ -261,12 +261,15 @@ a:focus-visible,
 }
 
 input[type="text"],
-input[type="password"] {
-    width: 100%;
-    padding: 12px 14px;
+input[type="password"],
+input[type="email"],
+input[type="number"],
+input[type="search"] {
+    padding: 11px 14px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
-    font-size: 15px;
+    font-size: 14px;
+    line-height: 1.4;
     font-family: inherit;
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
     background: var(--color-surface);
@@ -274,11 +277,23 @@ input[type="password"] {
     box-sizing: border-box;
 }
 
+#login-form input[type="text"],
+#login-form input[type="password"] {
+    width: 100%;
+}
+
 input[type="text"]:focus,
-input[type="password"]:focus {
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus {
     outline: none;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+input::placeholder {
+    color: var(--color-text-faint);
 }
 
 button {
@@ -323,13 +338,15 @@ button {
     min-height: 100vh;
 }
 
-header {
+header,
+.admin-header {
     background: var(--color-bg);
-    padding: 20px 32px 16px;
+    padding: 20px 48px 16px;
     display: flex;
     flex-direction: column;
     gap: 12px;
     border-bottom: 1px solid var(--color-border);
+    box-shadow: none;
 }
 
 .header-top {
@@ -402,7 +419,7 @@ header h1 {
 /* Gallery toolbar */
 .gallery-toolbar {
     background: var(--color-bg);
-    padding: 12px 32px;
+    padding: 12px 48px;
     border-bottom: 1px solid var(--color-border);
     display: flex;
     justify-content: space-between;
@@ -696,7 +713,7 @@ header h1 {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 28px 20px;
-    padding: 32px;
+    padding: 40px 48px 80px;
     max-width: 1600px;
     margin: 0 auto;
 }
@@ -1642,7 +1659,7 @@ header h1 {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 32px;
+    padding: 10px 48px;
     background: var(--color-bg);
     border-bottom: 1px solid var(--color-border);
     flex-wrap: wrap;

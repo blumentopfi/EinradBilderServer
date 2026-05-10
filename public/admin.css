@@ -5,49 +5,15 @@
     background: var(--color-bg);
 }
 
-.admin-header {
-    background: var(--color-bg);
-    box-shadow: none;
-    padding: 20px 32px 16px;
-    border-bottom: 1px solid var(--color-border);
-}
-
-.admin-header .header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 16px;
-}
-
-.admin-header .header-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.admin-header .header-logo {
-    width: 32px;
-    height: 32px;
-    opacity: 0.85;
-}
-
-.admin-header h1 {
-    font-family: var(--font-display);
-    font-size: 24px;
-    font-weight: 700;
-    color: var(--color-text);
-    letter-spacing: -0.005em;
-    margin: 0;
-    line-height: 1.2;
-}
+/* .admin-header inherits everything from the base <header> rule in styles.css.
+   Defining nothing here keeps gallery/FAQ/admin headers visually identical. */
 
 /* Tab Navigation — text links with underline on active */
 .admin-tabs {
     background: var(--color-bg);
     display: flex;
-    gap: 4px 24px;
-    padding: 0 32px;
+    gap: 4px 28px;
+    padding: 0 48px;
     border-bottom: 1px solid var(--color-border);
     flex-wrap: wrap;
 }
@@ -87,8 +53,8 @@
 
 /* Tab Content */
 .admin-content {
-    padding: 32px;
-    max-width: 1200px;
+    padding: 40px 48px 80px;
+    max-width: 1080px;
     margin: 0 auto;
 }
 
@@ -493,13 +459,18 @@
     font-size: 14px;
 }
 
-.form-group input,
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="number"],
+.form-group input[type="email"],
+.form-group input[type="search"],
 .form-group select {
     width: 100%;
-    padding: 10px 12px;
+    padding: 11px 14px;
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     font-size: 14px;
+    line-height: 1.4;
     font-family: inherit;
     background: var(--color-surface);
     color: var(--color-text);
@@ -511,6 +482,10 @@
     outline: none;
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+.form-group input::placeholder {
+    color: var(--color-text-faint);
 }
 
 .form-group small {
