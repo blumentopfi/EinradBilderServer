@@ -1,0 +1,14 @@
+{
+  "name": "Einrad Bildergalerie",
+  "short_name": "Einrad",
+  "description": "Bildergalerie für Einrad-Fotos und -Videos",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#ff6b35",
+  "lang": "de",
+  "icons": [
+    {"src": "unicycle.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "unicycle.png", "sizes": "192x192", "type": "image/png", "purpose": "any"}
+  ]
+}
