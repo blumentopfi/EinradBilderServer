@@ -318,8 +318,28 @@ function createFaqItemElement(item) {
     });
 
     header.appendChild(questionBtn);
+    div.appendChild(header);
 
-    // Add edit/delete buttons for admins (kept accessible regardless of collapsed state)
+    // Answer wrapper (for smooth grid animation)
+    const wrapper = document.createElement('div');
+    wrapper.className = 'faq-answer-wrapper';
+
+    const inner = document.createElement('div');
+    inner.className = 'faq-answer-inner';
+
+    const answer = document.createElement('div');
+    answer.className = 'faq-answer';
+    answer.id = answerId;
+    answer.innerHTML = renderMarkdown(item.answer);
+
+    inner.appendChild(answer);
+
+    // Voting row — inside the collapsible area so it animates with the answer
+    const voteRow = createVoteRow(item);
+    inner.appendChild(voteRow);
+
+    // Admin edit/delete buttons — moved into the collapsible area to keep
+    // collapsed cards uncluttered.
     if (currentUser && currentUser.role === 'admin') {
         const actions = document.createElement('div');
         actions.className = 'faq-actions';
@@ -344,30 +364,11 @@ function createFaqItemElement(item) {
 
         actions.appendChild(editBtn);
         actions.appendChild(deleteBtn);
-        header.appendChild(actions);
+        inner.appendChild(actions);
     }
 
-    div.appendChild(header);
-
-    // Answer wrapper (for smooth grid animation)
-    const wrapper = document.createElement('div');
-    wrapper.className = 'faq-answer-wrapper';
-
-    const inner = document.createElement('div');
-    inner.className = 'faq-answer-inner';
-
-    const answer = document.createElement('div');
-    answer.className = 'faq-answer';
-    answer.id = answerId;
-    answer.innerHTML = renderMarkdown(item.answer);
-
-    inner.appendChild(answer);
     wrapper.appendChild(inner);
     div.appendChild(wrapper);
-
-    // Voting row
-    const voteRow = createVoteRow(item);
-    div.appendChild(voteRow);
 
     return div;
 }

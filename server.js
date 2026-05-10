@@ -610,7 +610,13 @@ app.post('/api/admin/upload', requireUploader, upload.single('file'), async (req
     }
 
     const targetPath = req.body.targetPath || '';
-    const targetDir = path.join(IMAGES_DIR, targetPath);
+    const targetDir = resolveMediaPath(targetPath);
+    if (targetDir === null) {
+      if (req.file && req.file.path) {
+        fsSync.unlink(req.file.path, () => {});
+      }
+      return res.status(403).json({ error: 'Zugriff verweigert' });
+    }
 
     // Ensure target directory exists
     await fs.mkdir(targetDir, { recursive: true });
@@ -1196,6 +1202,22 @@ app.delete('/api/favorites', requireAuth, (req, res) => {
 
 // ===== ADMIN DASHBOARD + AUDIT ENDPOINTS =====
 
+// Read disk space stats for the partition holding a path.
+// Returns { total, free, used } in bytes, or null if unsupported/unreadable.
+async function getDiskUsage(targetPath) {
+  if (typeof fs.statfs !== 'function') return null;
+  try {
+    const stats = await fs.statfs(targetPath);
+    const total = stats.bsize * stats.blocks;
+    const free = stats.bsize * stats.bavail;
+    const used = total - free;
+    return { total, free, used };
+  } catch (err) {
+    console.error('Disk usage error:', err);
+    return null;
+  }
+}
+
 // Recursively walk a directory to count files/folders and sum sizes.
 // Skips symlinks, hidden entries, and errors on individual files.
 async function walkMediaStats(rootDir) {
@@ -1281,8 +1303,16 @@ app.get('/api/admin/stats', requireAdmin, async (req, res) => {
       categories: countFaqCategories()
     };
 
-    // Media stats (walk IMAGES_DIR)
-    const mediaStats = await walkMediaStats(IMAGES_DIR);
+    // Media stats (walk IMAGES_DIR) and device disk usage in parallel
+    const [mediaStats, diskUsage] = await Promise.all([
+      walkMediaStats(IMAGES_DIR),
+      getDiskUsage(IMAGES_DIR)
+    ]);
+    if (diskUsage) {
+      mediaStats.diskTotal = diskUsage.total;
+      mediaStats.diskFree = diskUsage.free;
+      mediaStats.diskUsed = diskUsage.used;
+    }
 
     // Favorites stats
     const favoritesStats = {
@@ -1705,24 +1735,6 @@ app.use(express.static('public', {
   maxAge: '1d', // Cache static assets for 1 day
   etag: true
 }));
-
-// Serve HTML documents from root (with authentication)
-const htmlDocuments = [
-  'Fall 2 - Glühende Hallen Vertraulicher Bericht.html',
-  'Fall 2 - Krellins Verzweiflungsnotizen.html',
-  'Fall 2 - Medizinisches Beobachtungsprotokoll.html',
-  'Fall 2 - Stadtwache Einbruchsbericht.html',
-  'Fall 2 - Torvalds Forschungstagebuch.html',
-  'Fenris_Tagebuch.html',
-  'Goblin-Lösegeld-Notiz.html',
-  'eisenhafen-bote.html'
-];
-
-htmlDocuments.forEach(filename => {
-  app.get(`/${filename}`, requireAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, filename));
-  });
-});
 
 // 404 handler
 app.use((req, res) => {

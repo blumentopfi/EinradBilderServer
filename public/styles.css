@@ -7,19 +7,37 @@ html[data-theme="dark"] {
 }
 
 :root {
-    /* Colors */
+    /* Brand */
     --color-primary: #ff6b35;
+    --color-primary-hover: #f7931e;
+    --color-primary-soft: rgba(255, 107, 53, 0.12);
+    --color-primary-soft-hover: rgba(255, 107, 53, 0.2);
+    --color-primary-text-on-soft: #c14d18;
     --color-secondary: #f7931e;
+
+    /* Surfaces & text */
     --color-bg: #f5f7fa;
+    --color-surface: #ffffff;
+    --color-surface-alt: #f5f7fa;
+    --color-surface-inset: #f0f0f0;
     --color-text: #333;
     --color-text-muted: #555;
+    --color-text-soft: #666;
+    --color-text-faint: #888;
     --color-border: #ddd;
+    --color-border-soft: #eee;
+    --color-border-faint: #f0f0f0;
+
+    /* Status */
     --color-error: #e74c3c;
     --color-success: #27ae60;
+    --color-warning: #f7931e;
+
+    /* Favorite button */
     --color-favorite: #ff6b35;
     --color-favorite-idle: #ffffff;
     --favorite-btn-bg: rgba(0, 0, 0, 0.45);
-    --favorite-btn-bg-active: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    --favorite-btn-bg-active: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
     --favorite-btn-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
 
     /* Spacing */
@@ -41,11 +59,32 @@ html[data-theme="dark"] {
     --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.15);
     --shadow-lg: 0 15px 35px rgba(255, 107, 53, 0.3);
     --shadow-xl: 0 10px 50px rgba(0, 0, 0, 0.5);
+    --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
 
     /* Transitions */
     --transition-fast: 0.2s ease;
     --transition-normal: 0.3s ease;
     --transition-slow: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Dark theme tokens — bluish palette aligned with the meta theme-color
+   (#1a1a2e). Components that use the tokens above get dark mode for free. */
+html[data-theme="dark"] {
+    --color-bg: #1a1a2e;
+    --color-surface: #16213e;
+    --color-surface-alt: #1f2a48;
+    --color-surface-inset: #0f1628;
+    --color-text: #e0e0e0;
+    --color-text-muted: #c0c0c0;
+    --color-text-soft: #a0a0a0;
+    --color-text-faint: #888;
+    --color-border: #2a2a4a;
+    --color-border-soft: #2a2a4a;
+    --color-border-faint: #2d323c;
+    --color-primary-soft: rgba(255, 107, 53, 0.18);
+    --color-primary-soft-hover: rgba(255, 107, 53, 0.28);
+    --color-primary-text-on-soft: #ff8f60;
+    --shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -171,12 +210,10 @@ a:focus-visible,
 .login-container h1 {
     text-align: center;
     margin-bottom: 15px;
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-size: 32px;
-    font-weight: 800;
+    color: var(--color-text);
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
 }
 
 .unicycle-logo {
@@ -197,7 +234,7 @@ input[type="text"],
 input[type="password"] {
     width: 100%;
     padding: 15px;
-    border: 2px solid #f7931e;
+    border: 2px solid var(--color-primary-hover);
     border-radius: 10px;
     font-size: 16px;
     transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
@@ -208,7 +245,7 @@ input[type="password"] {
 input[type="text"]:focus,
 input[type="password"]:focus {
     outline: none;
-    border-color: #ff6b35;
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
     transform: scale(1.02);
 }
@@ -226,7 +263,7 @@ button {
 }
 
 #login-form button {
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
     color: white;
     font-weight: 700;
     font-size: 18px;
@@ -272,12 +309,10 @@ header {
 }
 
 header h1 {
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-size: 28px;
-    font-weight: 800;
+    color: var(--color-text);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
 }
 
 .header-title {
@@ -385,7 +420,7 @@ header h1 {
 
 .user-menu-btn:hover {
     background: rgba(255, 107, 53, 0.2);
-    border-color: #ff6b35;
+    border-color: var(--color-primary);
 }
 
 .user-menu-btn #user-info {
@@ -396,7 +431,7 @@ header h1 {
 .dropdown-arrow {
     font-size: 10px;
     transition: transform 0.2s;
-    color: #ff6b35;
+    color: var(--color-primary);
 }
 
 .user-menu-btn.active .dropdown-arrow {
@@ -459,7 +494,7 @@ header h1 {
 
 #selected-count {
     font-weight: 700;
-    color: #ff6b35;
+    color: var(--color-primary);
     margin-right: 10px;
     background: rgba(255, 107, 53, 0.1);
     padding: 8px 15px;
@@ -468,19 +503,20 @@ header h1 {
 }
 
 .btn-primary {
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    background: var(--color-primary);
     color: white;
-    font-weight: 700;
-    border: none;
+    font-weight: 600;
+    border: 1px solid var(--color-primary);
 }
 
 .btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 20px rgba(255, 107, 53, 0.4);
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
 }
 
 .btn-primary:disabled {
     background: #ccc;
+    border-color: #ccc;
     color: #999;
     cursor: not-allowed;
 }
@@ -493,8 +529,7 @@ header h1 {
 }
 
 .btn-secondary:hover {
-    background: #e0e0e0;
-    transform: translateY(-2px);
+    background: #e8e8e8;
     border-color: #ccc;
 }
 
@@ -625,24 +660,23 @@ header h1 {
 }
 
 .image-card {
-    background: white;
-    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
     overflow: hidden;
-    box-shadow: var(--shadow-md);
-    transition: transform var(--transition-slow), box-shadow var(--transition-slow), border-color var(--transition-slow);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
     cursor: pointer;
     position: relative;
-    border: 3px solid transparent;
+    border: 2px solid transparent;
     content-visibility: auto;
-    contain-intrinsic-size: 320px 320px;
+    contain-intrinsic-size: 320px 240px;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
 
 .image-card:hover {
-    transform: translateY(-10px) scale(1.02);
-    box-shadow: var(--shadow-lg);
-    border-color: rgba(255, 107, 53, 0.3);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    border-color: var(--color-primary);
 }
 
 .image-card.selected {
@@ -710,7 +744,7 @@ header h1 {
     width: 35px;
     height: 35px;
     background: rgba(255, 255, 255, 0.95);
-    border: 3px solid #f7931e;
+    border: 3px solid var(--color-primary-hover);
     border-radius: 8px;
     display: flex;
     justify-content: center;
@@ -725,8 +759,8 @@ header h1 {
 }
 
 .image-card.selected .checkbox-overlay {
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-    border-color: #ff6b35;
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+    border-color: var(--color-primary);
     transform: scale(1.15) rotate(5deg);
 }
 
@@ -874,14 +908,22 @@ header h1 {
 }
 
 .image-name {
-    padding: 18px;
-    font-size: 14px;
-    color: #333;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-    min-width: 0;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    padding: 24px 12px 10px 12px;
+    font-size: 13px;
     font-weight: 600;
-    background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 107, 53, 0.05) 100%);
+    color: #fff;
+    line-height: 1.3;
+    pointer-events: none;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0) 100%);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 4;
 }
 
 /* Preview Modal */
@@ -936,7 +978,7 @@ header h1 {
 }
 
 .close-modal:hover {
-    background: #ff6b35;
+    background: var(--color-primary);
     transform: rotate(90deg) scale(1.1);
 }
 
@@ -969,7 +1011,7 @@ header h1 {
 }
 
 .nav-btn {
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
     color: white;
     padding: 14px 28px;
     font-size: 16px;
@@ -1056,7 +1098,7 @@ header h1 {
     }
 
     .btn-nav.active {
-        border-left-color: #ff6b35;
+        border-left-color: var(--color-primary);
         background: rgba(255, 107, 53, 0.1);
     }
 
@@ -1262,19 +1304,19 @@ header h1 {
 
 /* Folder Cards */
 .folder-card {
-    background: white;
-    border-radius: 15px;
-    padding: 30px 20px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: 26px 18px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: box-shadow var(--transition-fast), border-color var(--transition-fast);
     cursor: pointer;
     position: relative;
-    border: 3px solid transparent;
+    border: 2px solid transparent;
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 15px;
+    gap: 14px;
     content-visibility: auto;
     contain-intrinsic-size: 200px 200px;
     touch-action: manipulation;
@@ -1282,35 +1324,33 @@ header h1 {
 }
 
 .folder-card:hover {
-    transform: translateY(-10px) scale(1.02);
-    box-shadow: 0 15px 35px rgba(247, 147, 30, 0.3);
-    border-color: rgba(247, 147, 30, 0.3);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    border-color: var(--color-primary);
 }
 
 .folder-card.back-button {
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-    color: white;
+    background: var(--color-surface-alt);
+    border-color: var(--color-border);
 }
 
 .folder-card.back-button .folder-name {
-    color: white;
+    color: var(--color-text);
 }
 
 .folder-card.back-button .back-icon {
-    font-size: 80px;
+    font-size: 64px;
     font-weight: bold;
-    color: white;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    color: var(--color-primary);
 }
 
 .folder-card.back-button:hover {
-    transform: translateY(-10px) scale(1.05);
-    box-shadow: 0 15px 40px rgba(255, 107, 53, 0.5);
+    border-color: var(--color-primary);
+    background: var(--color-surface);
 }
 
 .folder-card.back-button:hover .back-icon {
-    transform: translateX(-5px);
-    transition: transform 0.3s ease;
+    transform: translateX(-3px);
+    transition: transform var(--transition-fast);
 }
 
 .folder-icon {
@@ -1355,7 +1395,7 @@ header h1 {
 .form-group textarea:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #ff6b35;
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
 }
 
@@ -1469,7 +1509,7 @@ header h1 {
 }
 
 .type-filter-btn.active {
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
     color: white;
     box-shadow: 0 2px 6px rgba(255, 107, 53, 0.3);
 }
@@ -1541,7 +1581,7 @@ header h1 {
 }
 
 .slideshow-btn:hover {
-    background: #ff6b35;
+    background: var(--color-primary);
     transform: scale(1.05);
 }
 
@@ -1589,12 +1629,10 @@ header h1 {
 
 .shortcuts-modal-content h2 {
     margin-bottom: 24px;
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-size: 24px;
-    font-weight: 800;
+    color: var(--color-text);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
 }
 
 .shortcuts-list {
@@ -2046,7 +2084,7 @@ body.rubber-banding .folder-card {
 
 [data-theme="dark"] input[type="text"]:focus,
 [data-theme="dark"] input[type="password"]:focus {
-    border-color: #ff6b35;
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
 }
 
@@ -2141,10 +2179,7 @@ body.rubber-banding .folder-card {
     border-color: rgba(255, 107, 53, 0.4);
 }
 
-[data-theme="dark"] .image-name {
-    color: #e0e0e0;
-    background: linear-gradient(to bottom, rgba(22, 33, 62, 0) 0%, rgba(255, 107, 53, 0.05) 100%);
-}
+/* .image-name is now an overlay on the image — same gradient works in both themes */
 
 [data-theme="dark"] .image-wrapper {
     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
@@ -2152,7 +2187,7 @@ body.rubber-banding .folder-card {
 
 [data-theme="dark"] .checkbox-overlay {
     background: rgba(22, 33, 62, 0.95);
-    border-color: #f7931e;
+    border-color: var(--color-primary-hover);
 }
 
 /* Folder cards */
@@ -2233,13 +2268,13 @@ body.rubber-banding .folder-card {
 [data-theme="dark"] .form-group input:focus,
 [data-theme="dark"] .form-group textarea:focus,
 [data-theme="dark"] .form-group select:focus {
-    border-color: #ff6b35;
+    border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
 }
 
 /* Selected count badge */
 [data-theme="dark"] #selected-count {
-    color: #ff6b35;
+    color: var(--color-primary);
     background: rgba(255, 107, 53, 0.15);
 }
 
@@ -2403,7 +2438,7 @@ body.rubber-banding .folder-card {
     align-items: center;
     justify-content: space-between;
     padding: 10px 12px;
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
     color: #fff;
     font-weight: 700;
     font-size: 14px;
@@ -2492,7 +2527,7 @@ body.rubber-banding .folder-card {
 .upload-queue-progress-fill {
     height: 100%;
     width: 0%;
-    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
     transition: width 0.15s ease;
 }
 

@@ -950,24 +950,18 @@ function createMediaCard(fileObj, index) {
     const nameDiv = document.createElement('div');
     nameDiv.className = 'image-name';
     nameDiv.textContent = fileObj.name;
+    nameDiv.title = fileObj.name;
 
     wrapper.appendChild(mediaElement);
     wrapper.appendChild(favBtn);
     wrapper.appendChild(checkbox);
+    wrapper.appendChild(nameDiv);
     card.appendChild(wrapper);
-    card.appendChild(nameDiv);
 
-    // Click on card to toggle selection
+    // Click anywhere on card → open preview. Selection is via the checkbox.
     card.addEventListener('click', (e) => {
-        // Ignore clicks that originated on the favorite button
-        if (e.target.closest('.favorite-btn')) return;
-        if (e.target.tagName === 'IMG' || e.target.tagName === 'VIDEO' || e.target.classList.contains('play-icon')) {
-            // Click on media opens preview
-            openPreview(index);
-        } else {
-            // Click elsewhere toggles selection
-            toggleSelection(fileObj.path, card);
-        }
+        if (e.target.closest('.favorite-btn, .checkbox-overlay')) return;
+        openPreview(index);
     });
 
     // Checkbox click

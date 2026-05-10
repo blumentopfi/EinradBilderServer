@@ -861,6 +861,7 @@ function renderDashboard(stats) {
     setText('stat-media-files-2', m.totalFiles);
     setText('stat-media-folders', m.totalFolders);
     setText('stat-media-storage', formatBytes(m.storageBytes));
+    renderDiskUsage(m);
 
     const a = stats.activity || {};
     setText('stat-media-uploads7', a.uploadsLast7Days);
@@ -868,6 +869,44 @@ function renderDashboard(stats) {
     const fav = stats.favorites || {};
     setText('stat-favorites-total', fav.total);
     setText('stat-favorites-total-2', fav.total);
+}
+
+function renderDiskUsage(media) {
+    const wrapper = document.getElementById('disk-usage');
+    if (!wrapper) return;
+
+    const total = Number(media.diskTotal);
+    const free = Number(media.diskFree);
+    const used = Number(media.diskUsed);
+
+    if (!Number.isFinite(total) || total <= 0 || !Number.isFinite(free) || !Number.isFinite(used)) {
+        wrapper.classList.add('hidden');
+        return;
+    }
+
+    wrapper.classList.remove('hidden');
+
+    const percent = Math.min(100, Math.max(0, (used / total) * 100));
+    const fill = document.getElementById('disk-usage-fill');
+    if (fill) fill.style.width = percent.toFixed(1) + '%';
+
+    const bar = document.getElementById('disk-usage-bar');
+    if (bar) {
+        bar.setAttribute('aria-valuenow', percent.toFixed(0));
+        bar.setAttribute('aria-valuetext',
+            `${percent.toFixed(0)}% belegt, ${formatBytes(free)} frei`);
+    }
+
+    setText('disk-usage-text', `${formatBytes(free)} frei`);
+    setText('disk-usage-meta',
+        `${formatBytes(used)} von ${formatBytes(total)} belegt (${percent.toFixed(1)} %)`);
+
+    wrapper.classList.remove('warn', 'danger');
+    if (percent >= 95) {
+        wrapper.classList.add('danger');
+    } else if (percent >= 80) {
+        wrapper.classList.add('warn');
+    }
 }
 
 function setText(id, value) {
