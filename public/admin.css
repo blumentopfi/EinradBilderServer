@@ -351,27 +351,28 @@
 }
 
 .upload-item {
-    background: var(--color-surface);
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--color-border-soft);
+    border-radius: 0;
+    padding: 12px 0;
+    margin-bottom: 0;
     display: flex;
     align-items: center;
-    gap: 15px;
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    gap: 12px;
+    transition: background var(--transition-fast);
 }
 
 .upload-item:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background: var(--color-surface-alt);
 }
 
 .upload-thumbnail {
-    width: 60px;
-    height: 60px;
+    width: 48px;
+    height: 48px;
     object-fit: cover;
-    border-radius: 6px;
-    background: #f0f0f0;
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-inset);
 }
 
 .upload-item-info {
@@ -401,69 +402,68 @@
 }
 
 .progress-bar {
-    height: 8px;
-    background: #e0e0e0;
-    border-radius: 4px;
+    height: 4px;
+    background: var(--color-surface-inset);
+    border-radius: 2px;
     overflow: hidden;
-    margin-bottom: 5px;
+    margin-bottom: 4px;
 }
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
-    transition: width 0.3s;
-    border-radius: 4px;
+    background: var(--color-primary);
+    transition: width var(--transition-normal);
+    border-radius: 2px;
 }
 
 .upload-status {
-    font-size: 13px;
+    font-size: 12px;
     color: var(--color-text-soft);
 }
 
 .upload-item.success .upload-status {
-    color: #28a745;
-    font-weight: 600;
+    color: var(--color-success);
+    font-weight: 500;
 }
 
 .upload-item.error .upload-status {
-    color: #dc3545;
-    font-weight: 600;
+    color: var(--color-error);
+    font-weight: 500;
 }
 
 .remove-upload-btn {
-    padding: 8px 12px;
-    background: #f0f0f0;
-    border: none;
-    border-radius: 6px;
+    padding: 4px 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    font-size: 18px;
-    color: var(--color-text-soft);
-    transition: background-color 0.2s ease, color 0.2s ease;
+    font-size: 16px;
+    color: var(--color-text-faint);
+    transition: color var(--transition-fast), border-color var(--transition-fast);
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
 
 .remove-upload-btn:hover {
-    background: #dc3545;
-    color: white;
+    color: var(--color-error);
+    border-color: var(--color-error);
 }
 
-/* Folder Grid */
+/* Folder Grid (admin manage view) */
 .folder-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
+    gap: var(--space-md) var(--space-lg);
+    margin-bottom: var(--space-md);
 }
 
-.folder-card.back-folder {
-    background: rgba(208, 74, 24, 0.1);
+.folder-card.back-folder::before {
+    background: var(--color-primary-soft);
     border-color: var(--color-primary);
 }
 
-.folder-card.back-folder:hover {
-    background: rgba(208, 74, 24, 0.2);
-    transform: translateY(-5px);
+.folder-card.back-folder:hover::before {
+    background: var(--color-primary-soft-hover);
 }
 
 .folder-card.file-card {
@@ -496,18 +496,21 @@
 .form-group input,
 .form-group select {
     width: 100%;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 15px;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--color-surface);
+    color: var(--color-text);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(208, 74, 24, 0.1);
+    box-shadow: 0 0 0 3px var(--color-primary-soft);
 }
 
 .form-group small {
@@ -525,12 +528,13 @@
 }
 
 .current-path {
-    padding: 12px;
-    background: var(--color-bg);
-    border-radius: 8px;
-    font-family: monospace;
-    color: var(--color-text-soft);
-    font-size: 14px;
+    padding: 8px 12px;
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border-soft);
+    border-radius: var(--radius-sm);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--color-text-muted);
+    font-size: 13px;
 }
 
 /* Modal Enhancements for Admin */
@@ -550,11 +554,15 @@
 }
 
 .error-message {
-    background: #f8d7da;
-    color: #721c24;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
+    background: transparent;
+    color: var(--color-error);
+    padding: 8px 0;
+    border: none;
+    border-left: 3px solid var(--color-error);
+    padding-left: 12px;
+    border-radius: 0;
+    margin-bottom: var(--space-md);
+    font-size: 13px;
     display: none;
 }
 
