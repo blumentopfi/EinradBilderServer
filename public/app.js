@@ -955,8 +955,8 @@ function createMediaCard(fileObj, index) {
     wrapper.appendChild(mediaElement);
     wrapper.appendChild(favBtn);
     wrapper.appendChild(checkbox);
-    wrapper.appendChild(nameDiv);
     card.appendChild(wrapper);
+    card.appendChild(nameDiv);
 
     // Click anywhere on card → open preview. Selection is via the checkbox.
     card.addEventListener('click', (e) => {
