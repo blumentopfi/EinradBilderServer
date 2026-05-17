@@ -412,7 +412,32 @@ cloudflared tunnel login
 cloudflared tunnel create gallery
 ```
 
-#### 5. Process Management with PM2
+#### 5. Process Management
+
+You have two options for running the app under a process manager that
+auto-starts on boot and restarts on crash. Pick one — don't run both.
+
+**Option A: systemd (lightweight, native, recommended)**
+
+The repo ships a unit template and installer in `scripts/`:
+
+```bash
+sudo bash scripts/install-service.sh
+
+# View logs
+journalctl -u gallery -f
+
+# To remove later
+sudo bash scripts/uninstall-service.sh
+```
+
+The installer detects your user, project path, and `node` binary, fills
+them into `scripts/gallery.service`, installs it to
+`/etc/systemd/system/gallery.service`, and enables + starts it.
+Requires `npm install` to have been run and a populated `.env` file.
+
+**Option B: PM2**
+
 ```bash
 sudo npm install -g pm2
 

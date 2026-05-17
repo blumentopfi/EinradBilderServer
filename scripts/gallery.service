@@ -1,0 +1,25 @@
+[Unit]
+Description=Einrad Bildergalerie (Node.js image/video gallery)
+Documentation=https://github.com/Finto/EinradBilderServer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__APPDIR__
+EnvironmentFile=__APPDIR__/.env
+ExecStart=__NODE__ server.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=gallery
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
