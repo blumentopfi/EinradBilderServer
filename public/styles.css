@@ -223,7 +223,7 @@ a:focus-visible,
     background: transparent;
     padding: 0;
     width: 100%;
-    max-width: 360px;
+    max-width: 380px;
     position: relative;
     z-index: 1;
 }
@@ -231,33 +231,45 @@ a:focus-visible,
 .login-container h1 {
     font-family: var(--font-display);
     text-align: center;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     color: var(--color-text);
-    font-size: 32px;
+    font-size: 34px;
     font-weight: 700;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
+    line-height: 1.1;
 }
 
 .login-container > p {
     text-align: center;
     color: var(--color-text-soft);
     font-size: 14px;
-    margin-bottom: 32px;
+    margin-bottom: 36px;
+    line-height: 1.5;
 }
 
 .unicycle-logo {
-    width: 56px;
-    height: 56px;
+    width: 64px;
+    height: 64px;
     display: block;
-    margin: 0 auto 16px;
-    opacity: 0.9;
+    margin: 0 auto 20px;
+    opacity: 0.92;
 }
 
 #login-form {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    margin-top: 8px;
+    gap: 14px;
+    margin-top: 12px;
+}
+
+#login-form input[type="text"],
+#login-form input[type="password"] {
+    padding: 13px 16px;
+    font-size: 15px;
+}
+
+#login-form button {
+    margin-top: 6px;
 }
 
 input[type="text"],
@@ -646,7 +658,7 @@ header h1 {
 }
 
 .breadcrumb-separator {
-    color: #ccc;
+    color: var(--color-text-faint);
 }
 
 /* Loading states */
@@ -748,10 +760,21 @@ header h1 {
 .image-wrapper {
     position: relative;
     width: 100%;
-    padding-top: 75%;
+    /* aspect-ratio is the modern, safe way; padding-top: 75% kept as a
+       fallback for older engines. With both, the wrapper can't extend
+       past 4:3 even if a <video> element with no metadata insists on
+       its 300×150 default intrinsic size before load. */
+    aspect-ratio: 4 / 3;
+    padding-top: 0;
     overflow: hidden;
     background: var(--color-surface-inset);
     border-radius: var(--radius-sm);
+}
+
+@supports not (aspect-ratio: 4 / 3) {
+    .image-wrapper {
+        padding-top: 75%;
+    }
 }
 
 .image-wrapper img,
@@ -1187,6 +1210,12 @@ header h1 {
 
 #preview-image,
 #preview-video {
+    /* The <img> tag has width="1" height="1" attributes (CLS placeholder).
+       Without explicit width/height auto, max-width:100% just caps a 1×1
+       image and the preview renders as a single pixel — that was the
+       "image preview shows path but no picture" bug. */
+    width: auto;
+    height: auto;
     max-width: 100%;
     max-height: 78vh;
     object-fit: contain;
@@ -1413,8 +1442,12 @@ header h1 {
         margin: 15px;
     }
 
-    #login-screen::before {
-        font-size: 100px;
+    /* Smaller blobs on mobile so they don't dominate the viewport. */
+    #login-screen::before,
+    #login-screen::after {
+        width: 320px;
+        height: 320px;
+        filter: blur(50px);
     }
 
     /* Admin page mobile */
@@ -1558,6 +1591,17 @@ header h1 {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     position: relative;
+    /* Pseudo-elements don't always inherit the universal `* { box-sizing }`
+       reset, so the right/bottom borders get pushed outside the 100% width
+       and clipped. Pin it explicitly. */
+    box-sizing: border-box;
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.folder-card:hover::before,
+.folder-card:focus-visible::before {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
 }
 
 .folder-card .folder-icon {
@@ -1568,6 +1612,12 @@ header h1 {
     padding-top: 75%;
     pointer-events: none;
     display: block;
+    /* Hide the emoji/text fallback inside .folder-icon — the real icon
+       is rendered by ::after via an SVG mask. Without this, the emoji
+       glyph overflows past padding-top and bleeds into .folder-name. */
+    font-size: 0;
+    line-height: 0;
+    color: transparent;
 }
 
 .folder-card .folder-icon::after {
@@ -1593,9 +1643,9 @@ header h1 {
             mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M14 7l-5 5 5 5' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / 60% 60% no-repeat;
 }
 
-.folder-card.back-button .back-icon {
-    display: none;
-}
+/* The `←` text fallback inside .back-icon is hidden by the font-size:0 rule
+   on .folder-icon above. Keep the element visible so its ::after (the SVG
+   arrow mask) actually renders — display:none here used to hide it. */
 
 .folder-card .folder-name {
     font-size: 13px;
@@ -1611,6 +1661,84 @@ header h1 {
 .folder-card.back-button .folder-name {
     font-style: italic;
     color: var(--color-text-soft);
+}
+
+/* Upload card — same grid footprint as a folder card, rendered last.
+   Dashed border tile with a '+' centered and "Hochladen" label below. */
+.upload-card {
+    background: transparent;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    cursor: pointer;
+    position: relative;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    gap: 8px;
+    content-visibility: auto;
+    contain-intrinsic-size: 200px 240px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity var(--transition-fast);
+}
+
+.upload-card::before {
+    content: '';
+    display: block;
+    width: 100%;
+    padding-top: 75%;
+    background: transparent;
+    border: 1.5px dashed var(--color-border);
+    border-radius: var(--radius-sm);
+    box-sizing: border-box;
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.upload-card::after {
+    content: '';
+    position: absolute;
+    top: 37.5%;
+    left: 50%;
+    width: 36px;
+    height: 36px;
+    transform: translate(-50%, -50%);
+    background: var(--color-text-faint);
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 5v14M5 12h14' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg>") center / contain no-repeat;
+            mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 5v14M5 12h14' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'/></svg>") center / contain no-repeat;
+    transition: background var(--transition-fast);
+    pointer-events: none;
+}
+
+.upload-card:hover::before,
+.upload-card:focus-visible::before {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+}
+
+.upload-card:hover::after,
+.upload-card:focus-visible::after {
+    background: var(--color-primary);
+}
+
+.upload-card:focus-visible {
+    outline: none;
+}
+
+.upload-card-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--color-text-soft);
+    min-width: 0;
+    line-height: 1.3;
+    padding: 0 2px;
+    transition: color var(--transition-fast);
+}
+
+.upload-card:hover .upload-card-label,
+.upload-card:focus-visible .upload-card-label {
+    color: var(--color-primary);
 }
 
 /* Form styles — editorial */
@@ -2037,7 +2165,7 @@ body.rubber-banding .folder-card {
 
 .breadcrumb-dropdown-item:hover,
 .breadcrumb-dropdown-item:focus-visible {
-    background: rgba(208, 74, 24, 0.1);
+    background: var(--color-primary-soft);
     color: var(--color-primary);
     outline: none;
 }
@@ -2045,7 +2173,7 @@ body.rubber-banding .folder-card {
 .breadcrumb-dropdown-item.current {
     font-weight: 700;
     color: var(--color-primary);
-    background: rgba(208, 74, 24, 0.08);
+    background: var(--color-primary-soft);
 }
 
 .breadcrumb-dropdown-empty {
@@ -2130,81 +2258,9 @@ body.rubber-banding .folder-card {
 /* ============================================
    Dark theme variants for new features
    ============================================ */
-[data-theme="dark"] .gallery-filterbar {
-    background: #1e1e24;
-    border-bottom-color: #333;
-}
-
-[data-theme="dark"] .search-input {
-    background: #2a2a32;
-    border-color: #3a3a44;
-    color: #e8e8ec;
-}
-
-[data-theme="dark"] .search-input:focus {
-    background: #2a2a32;
-    border-color: var(--color-primary);
-}
-
-[data-theme="dark"] .search-clear {
-    background: rgba(255, 255, 255, 0.1);
-    color: #bbb;
-}
-
-[data-theme="dark"] .type-filter {
-    background: #2a2a32;
-    border-color: #3a3a44;
-}
-
-[data-theme="dark"] .type-filter-btn {
-    color: #bbb;
-}
-
-[data-theme="dark"] .gallery-empty-filter {
-    background: #1e1e24;
-    color: #bbb;
-}
-
-[data-theme="dark"] .shortcuts-modal-content {
-    background: #1e1e24;
-    color: #e8e8ec;
-}
-
-[data-theme="dark"] .shortcut-row {
-    background: #2a2a32;
-}
-
-[data-theme="dark"] .shortcut-row dd {
-    color: #bbb;
-}
-
-[data-theme="dark"] kbd {
-    background: #111115;
-    border-color: #3a3a44;
-    color: #e8e8ec;
-}
-
-[data-theme="dark"] .breadcrumb-dropdown {
-    background: #1e1e24;
-    border-color: #3a3a44;
-}
-
-[data-theme="dark"] .breadcrumb-dropdown-item {
-    color: #e8e8ec;
-}
-
-[data-theme="dark"] .breadcrumb-dropdown-item:hover,
-[data-theme="dark"] .breadcrumb-dropdown-item:focus-visible {
-    background: rgba(208, 74, 24, 0.2);
-}
-
-[data-theme="dark"] .breadcrumb-dropdown-empty {
-    color: #888;
-}
-
-[data-theme="dark"] .rubber-band {
-    background: rgba(208, 74, 24, 0.2);
-}
+/* Filterbar / search / shortcuts / breadcrumb-dropdown / kbd:
+   base rules in this file are already token-driven, so dark mode just
+   adapts. No overrides needed. */
 /* ============================================
    Dark Mode Toggle Button
    ============================================ */
@@ -2227,7 +2283,7 @@ body.rubber-banding .folder-card {
 }
 
 .btn-dark-mode:hover {
-    background: rgba(208, 74, 24, 0.1);
+    background: var(--color-primary-soft);
     border-color: var(--color-primary);
     transform: scale(1.1);
 }
@@ -2283,289 +2339,158 @@ body.rubber-banding .folder-card {
 }
 
 /* ============================================
-   Login Animated Gradient Background
+   Login Background — floating soft light blobs
+   Two large radial gradients drift slowly across a flat paper base.
+   No JS, no real motion sickness, falls back gracefully on
+   prefers-reduced-motion (handled below).
    ============================================ */
 #login-screen {
-    background: linear-gradient(-45deg, #f5f7fa, #fff4ed, #f5f7fa, #fff0e6);
-    background-size: 400% 400%;
-    animation: loginGradient 15s ease infinite;
+    background: var(--color-bg);
+    overflow: hidden;
 }
 
-@keyframes loginGradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+#login-screen::before,
+#login-screen::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    pointer-events: none;
+    z-index: 0;
+    will-change: transform;
+}
+
+#login-screen::before {
+    width: 480px;
+    height: 480px;
+    top: -120px;
+    left: -100px;
+    background: radial-gradient(circle at center,
+        var(--color-primary-soft-hover) 0%,
+        var(--color-primary-soft) 45%,
+        transparent 70%);
+    animation: loginBlobA 28s ease-in-out infinite;
+}
+
+#login-screen::after {
+    width: 420px;
+    height: 420px;
+    bottom: -100px;
+    right: -80px;
+    background: radial-gradient(circle at center,
+        rgba(208, 74, 24, 0.18) 0%,
+        rgba(208, 74, 24, 0.08) 50%,
+        transparent 72%);
+    animation: loginBlobB 34s ease-in-out infinite;
+}
+
+@keyframes loginBlobA {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33%      { transform: translate(60px, 40px) scale(1.1); }
+    66%      { transform: translate(-30px, 80px) scale(0.95); }
+}
+
+@keyframes loginBlobB {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    40%      { transform: translate(-80px, -50px) scale(1.15); }
+    75%      { transform: translate(40px, -30px) scale(0.9); }
+}
+
+/* Dark-mode blobs use the warmer dark primary so they read on ink palette. */
+[data-theme="dark"] #login-screen::before {
+    background: radial-gradient(circle at center,
+        rgba(227, 92, 42, 0.22) 0%,
+        rgba(227, 92, 42, 0.10) 50%,
+        transparent 72%);
+}
+
+[data-theme="dark"] #login-screen::after {
+    background: radial-gradient(circle at center,
+        rgba(227, 92, 42, 0.16) 0%,
+        rgba(227, 92, 42, 0.06) 55%,
+        transparent 75%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #login-screen::before,
+    #login-screen::after {
+        animation: none;
+    }
 }
 
 /* ============================================
-   Dark Mode Color Scheme
+   Dark Mode Color Scheme — DELETED
+   The authoritative dark tokens live at the top of this file
+   (html[data-theme="dark"] block, ~line 79). The previous override
+   block here silently re-defined them with a navy/purple palette that
+   collided with the editorial paper-and-ink design and caused every
+   downstream dark-mode bug. Body inherits --color-bg / --color-text.
    ============================================ */
-[data-theme="dark"] {
-    --color-bg: #1a1a2e;
-    --color-text: #e0e0e0;
-    --color-text-muted: #a0a0a0;
-    --color-border: #2a2a4a;
-    --color-error: #ff6b6b;
-    --color-success: #2ecc71;
 
-    --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 15px 35px rgba(208, 74, 24, 0.2);
-    --shadow-xl: 0 10px 50px rgba(0, 0, 0, 0.7);
-}
-
-/* Body & background */
-[data-theme="dark"] body {
-    background: #1a1a2e;
-    color: #e0e0e0;
-}
-
-/* Login screen dark mode */
+/* Dark-mode login: same blob structure, just with the dark bg base.
+   Pseudo-blob colors are overridden directly above near the blob rules. */
 [data-theme="dark"] #login-screen {
-    background: linear-gradient(-45deg, #1a1a2e, #1f1a2e, #1a1a2e, #261a2e);
-    background-size: 400% 400%;
-    animation: loginGradientDark 15s ease infinite;
+    background: var(--color-bg);
 }
 
-@keyframes loginGradientDark {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
+/* .login-container is designed transparent in light mode; keep it transparent
+   in dark mode too — adding a solid background here paints the gaps between
+   form fields as harsh horizontal bands. */
 
-[data-theme="dark"] .login-container {
-    background: #16213e;
-    border-color: #2a2a4a;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-}
+/* Inputs inherit --color-surface / --color-border / --color-text from the
+   dark theme token block at the top of this file — no extra rules needed.
+   Placeholder color is unified via the base input::placeholder rule. */
 
-[data-theme="dark"] input[type="text"],
-[data-theme="dark"] input[type="password"] {
-    background: rgba(26, 26, 46, 0.8);
-    color: #e0e0e0;
-    border-color: #2a2a4a;
-}
+/* ============================================
+   Dark-mode targeted overrides
+   Everything else inherits via tokens defined at the top of this file.
+   Only the rules where a base hardcoded color would look broken in dark
+   mode (or where a semantic animation needs a different palette) live here.
+   ============================================ */
 
-[data-theme="dark"] input[type="text"]:focus,
-[data-theme="dark"] input[type="password"]:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(208, 74, 24, 0.2);
-}
-
-[data-theme="dark"] input[type="text"]::placeholder,
-[data-theme="dark"] input[type="password"]::placeholder {
-    color: #666;
-}
-
-/* Header */
-[data-theme="dark"] header {
-    background: #16213e;
-    border-bottom-color: #2a2a4a;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-/* Gallery toolbar */
-[data-theme="dark"] .gallery-toolbar {
-    background: #16213e;
-    border-bottom-color: #2a2a4a;
-}
-
-/* Buttons */
-[data-theme="dark"] .btn-secondary {
-    background: transparent;
-    color: var(--color-text);
-    border-color: var(--color-border);
-}
-
-[data-theme="dark"] .btn-secondary:hover {
-    background: var(--color-surface-alt);
-    border-color: var(--color-text-soft);
-}
-
-[data-theme="dark"] .btn-primary:disabled {
-    background: #2a2a4a;
-    color: #666;
-}
-
-/* Nav buttons */
-[data-theme="dark"] .btn-nav {
-    color: #a0a0a0;
-}
-
-[data-theme="dark"] .btn-nav:hover {
-    color: var(--color-primary);
-    background: rgba(208, 74, 24, 0.1);
-}
-
-[data-theme="dark"] .btn-nav.active {
-    color: var(--color-primary);
-}
-
-/* User menu */
-[data-theme="dark"] .user-menu-btn {
-    background: rgba(208, 74, 24, 0.15);
-    border-color: rgba(208, 74, 24, 0.3);
-    color: #e0e0e0;
-}
-
-[data-theme="dark"] .user-menu-btn:hover {
-    background: rgba(208, 74, 24, 0.25);
-}
-
-[data-theme="dark"] .user-menu-btn #user-info {
-    color: #c0c0c0;
-}
-
-[data-theme="dark"] .user-dropdown {
-    background: #16213e;
-    border-color: #2a2a4a;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="dark"] .dropdown-item {
-    background: #16213e;
-    color: #e0e0e0;
-    border-bottom-color: #2a2a4a;
-}
-
-[data-theme="dark"] .dropdown-item:hover {
-    background: #1a1a2e;
-}
-
-/* Cards */
-[data-theme="dark"] .image-card {
-    background: #16213e;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="dark"] .image-card:hover {
-    box-shadow: 0 15px 35px rgba(208, 74, 24, 0.2);
-    border-color: rgba(208, 74, 24, 0.4);
-}
-
-/* .image-name is now an overlay on the image — same gradient works in both themes */
-
-[data-theme="dark"] .image-wrapper {
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-}
-
-[data-theme="dark"] .checkbox-overlay {
-    background: rgba(22, 33, 62, 0.95);
-    border-color: var(--color-primary-hover);
-}
-
-/* Folder cards */
-[data-theme="dark"] .folder-card {
-    background: #16213e;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="dark"] .folder-card:hover {
-    box-shadow: 0 15px 35px rgba(168, 59, 19, 0.2);
-    border-color: rgba(168, 59, 19, 0.4);
-}
-
-[data-theme="dark"] .folder-name {
-    color: #e0e0e0;
-}
-
-/* Breadcrumb */
-[data-theme="dark"] .breadcrumb-separator {
-    color: #3a3a5a;
-}
-
-/* Loading */
-[data-theme="dark"] .loading {
-    color: #a0a0a0;
-}
-
+/* Shimmer animation uses surface tones explicitly because the gradient
+   stops are mid-animation values, not steady-state palette. */
 [data-theme="dark"] .image-wrapper.loading {
-    background: linear-gradient(90deg, #1a1a2e 25%, #16213e 50%, #1a1a2e 75%);
+    background: linear-gradient(90deg,
+        var(--color-surface-inset) 25%,
+        var(--color-surface-alt) 50%,
+        var(--color-surface-inset) 75%);
     background-size: 200% 100%;
 }
 
-/* Empty state */
-[data-theme="dark"] .gallery p {
-    color: #a0a0a0;
-    background: #16213e;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+/* Checkbox/media-error overlays use a translucent surface in dark mode so
+   they stay readable over the underlying image. */
+[data-theme="dark"] .checkbox-overlay {
+    background: rgba(28, 28, 32, 0.95);
+    border-color: var(--color-primary-hover);
 }
 
-/* Media error */
 [data-theme="dark"] .media-error {
-    background: rgba(22, 33, 62, 0.95);
+    background: rgba(28, 28, 32, 0.95);
 }
 
-/* Modal */
-[data-theme="dark"] .modal {
-    background: rgba(0, 0, 0, 0.7);
-}
-
-[data-theme="dark"] .nav-btn:disabled {
-    background: #2a2a4a;
-}
-
-/* Change Password Modal */
-[data-theme="dark"] #change-password-modal .modal-content {
-    background: #16213e;
-    border: 1px solid #2a2a4a;
-    border-radius: 15px;
-    padding: 30px;
-}
-
-[data-theme="dark"] #change-password-modal h2 {
-    color: #e0e0e0;
-}
-
-[data-theme="dark"] .form-group label {
-    color: #c0c0c0;
-}
-
-[data-theme="dark"] .form-group input,
-[data-theme="dark"] .form-group textarea,
-[data-theme="dark"] .form-group select {
-    background: rgba(26, 26, 46, 0.8);
-    color: #e0e0e0;
-    border-color: #2a2a4a;
-}
-
-[data-theme="dark"] .form-group input:focus,
-[data-theme="dark"] .form-group textarea:focus,
-[data-theme="dark"] .form-group select:focus {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(208, 74, 24, 0.2);
-}
-
-/* Selected count badge */
-[data-theme="dark"] #selected-count {
-    color: var(--color-primary);
-    background: rgba(208, 74, 24, 0.15);
-}
-
-/* Dark mode toggle in dark mode */
-[data-theme="dark"] .btn-dark-mode {
-    border-color: #2a2a4a;
-}
-
-[data-theme="dark"] .btn-dark-mode:hover {
-    background: rgba(208, 74, 24, 0.15);
-    border-color: var(--color-primary);
-}
-
-/* Prefers dark color scheme fallback (auto-detect) */
+/* OS-auto dark-mode fallback: re-use the editorial dark tokens when the
+   user has not explicitly chosen a theme via data-theme. */
 @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]):not([data-theme="dark"]) {
-        --color-bg: #1a1a2e;
-        --color-text: #e0e0e0;
-        --color-text-muted: #a0a0a0;
-        --color-border: #2a2a4a;
-        --color-error: #ff6b6b;
-        --color-success: #2ecc71;
-
-        --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.4);
-        --shadow-lg: 0 15px 35px rgba(208, 74, 24, 0.2);
-        --shadow-xl: 0 10px 50px rgba(0, 0, 0, 0.7);
+        --color-bg: #16161a;
+        --color-surface: #1c1c20;
+        --color-surface-alt: #212126;
+        --color-surface-inset: #0e0e10;
+        --color-text: #ededeb;
+        --color-text-muted: #cbc9c4;
+        --color-text-soft: #9a9892;
+        --color-text-faint: #6b6b66;
+        --color-border: #2a2a2e;
+        --color-border-soft: #252528;
+        --color-border-faint: #1f1f22;
+        --color-primary: #e35c2a;
+        --color-primary-hover: #ff7a4a;
+        --color-primary-soft: rgba(227, 92, 42, 0.16);
+        --color-primary-soft-hover: rgba(227, 92, 42, 0.26);
+        --color-primary-text-on-soft: #ff8f60;
+        --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.5);
+        color-scheme: dark;
     }
 }
 
@@ -2651,16 +2576,8 @@ body.rubber-banding .folder-card {
     50% { transform: translateY(-6px); }
 }
 
-[data-theme="dark"] .upload-drop-overlay {
-    background: rgba(208, 74, 24, 0.28);
-}
-
-[data-theme="dark"] .upload-drop-message {
-    background: #1f1f2e;
-    color: #eee;
-    border-color: var(--color-primary);
-    box-shadow: var(--shadow-xl);
-}
+/* upload-drop overlay/message inherit --color-surface / --color-text /
+   --color-primary tokens — no dark override needed. */
 
 /* Upload queue card */
 .upload-queue-card {
@@ -2783,7 +2700,7 @@ body.rubber-banding .folder-card {
 .upload-queue-progress {
     width: 100%;
     height: 6px;
-    background: #eee;
+    background: var(--color-surface-alt);
     border-radius: 3px;
     overflow: hidden;
 }
@@ -2859,29 +2776,8 @@ body.rubber-banding .folder-card {
     white-space: nowrap;
 }
 
-[data-theme="dark"] .upload-queue-card {
-    background: #1f1f2e;
-    color: #eee;
-    border-color: #333;
-}
-
-[data-theme="dark"] .upload-queue-item {
-    border-bottom-color: #333;
-}
-
-[data-theme="dark"] .upload-queue-item-name {
-    color: #eee;
-}
-
-[data-theme="dark"] .upload-queue-item-size,
-[data-theme="dark"] .upload-queue-item-status,
-[data-theme="dark"] .upload-queue-item-target {
-    color: #aaa;
-}
-
-[data-theme="dark"] .upload-queue-progress {
-    background: #333;
-}
+/* upload-queue inherits --color-surface / --color-text / --color-border /
+   --color-text-muted / --color-surface-alt tokens — no overrides needed. */
 
 @media (max-width: 768px) {
     .upload-queue-card {
@@ -2977,17 +2873,7 @@ body.rubber-banding .folder-card {
     min-width: 20px;
 }
 
-[data-theme="dark"] .btn-global-search {
-    border-color: #3a3a44;
-    color: #bbb;
-}
-
-[data-theme="dark"] .btn-global-search:hover,
-[data-theme="dark"] .btn-global-search:focus-visible {
-    background: rgba(208, 74, 24, 0.18);
-    border-color: var(--color-primary);
-    color: var(--color-primary);
-}
+/* btn-global-search inherits tokens — no override needed. */
 
 @media (max-width: 600px) {
     .btn-global-search {
@@ -3171,11 +3057,11 @@ body.rubber-banding .folder-card {
 }
 
 .search-palette-result:hover {
-    background: rgba(208, 74, 24, 0.1);
+    background: var(--color-primary-soft);
 }
 
 .search-palette-result.is-active {
-    background: rgba(208, 74, 24, 0.2);
+    background: var(--color-primary-soft-hover);
 }
 
 .search-palette-result:focus-visible {
@@ -3230,53 +3116,7 @@ body.rubber-banding .folder-card {
     min-width: 18px;
 }
 
-/* Dark mode */
-[data-theme="dark"] .search-palette {
-    background: rgba(0, 0, 0, 0.6);
-}
-
-[data-theme="dark"] .search-palette-card {
-    background: #1e1e24;
-    color: #e8e8ec;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="dark"] .search-palette-input-row {
-    border-bottom-color: #3a3a44;
-}
-
-[data-theme="dark"] .search-palette-input {
-    color: #e8e8ec;
-}
-
-[data-theme="dark"] .search-palette-icon,
-[data-theme="dark"] .search-palette-status,
-[data-theme="dark"] .search-palette-close,
-[data-theme="dark"] .search-palette-hint,
-[data-theme="dark"] .search-palette-empty,
-[data-theme="dark"] .search-palette-loading,
-[data-theme="dark"] .search-palette-section-title,
-[data-theme="dark"] .search-palette-result-context,
-[data-theme="dark"] .search-palette-footer {
-    color: #bbb;
-}
-
-[data-theme="dark"] .search-palette-result {
-    color: #e8e8ec;
-}
-
-[data-theme="dark"] .search-palette-result:hover {
-    background: rgba(208, 74, 24, 0.18);
-}
-
-[data-theme="dark"] .search-palette-result.is-active {
-    background: rgba(208, 74, 24, 0.3);
-}
-
-[data-theme="dark"] .search-palette-footer {
-    background: #141418;
-    border-top-color: #3a3a44;
-}
+/* search-palette family fully token-driven; no dark overrides needed. */
 
 /* Mobile: full-screen card */
 @media (max-width: 600px) {

@@ -514,6 +514,14 @@ function renderGallery() {
         allCards.push(card);
     });
 
+    // Render upload card as the last grid item for admin/uploader users.
+    // Skip it when filters are active so the result list stays focused.
+    if (canUpload() && !filtersActive) {
+        const uploadCard = createUploadCard();
+        gallery.appendChild(uploadCard);
+        allCards.push(uploadCard);
+    }
+
     // Empty states
     if (visibleFolders.length === 0 && visibleFiles.length === 0) {
         const message = document.createElement('p');
@@ -523,10 +531,12 @@ function renderGallery() {
         } else if (filtersActive) {
             message.className = 'gallery-empty-filter';
             message.textContent = 'Keine Treffer';
-        } else if (!currentPath) {
+        } else if (!currentPath && !canUpload()) {
             message.textContent = 'Keine Medien im Verzeichnis gefunden';
         } else {
-            // Subfolder but empty -> let back button carry navigation
+            // Empty subfolder, or empty root for uploaders — the upload
+            // card (or back button) carries the conversation forward,
+            // no empty-state text needed.
             return updateSelectedCount();
         }
         gallery.appendChild(message);
@@ -772,6 +782,39 @@ function createBackButton() {
     card.addEventListener('click', () => {
         const parentPath = currentPath.split('/').slice(0, -1).join('/');
         loadImages(parentPath);
+    });
+
+    return card;
+}
+
+// Create upload card — dashed-border tile rendered last in the grid for
+// admin/uploader users. Clicking it opens the native file picker; the
+// existing upload pipeline handles the rest.
+function createUploadCard() {
+    const card = document.createElement('div');
+    card.className = 'upload-card';
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', 'Dateien in diesen Ordner hochladen');
+
+    const label = document.createElement('div');
+    label.className = 'upload-card-label';
+    label.textContent = 'Hochladen';
+    card.appendChild(label);
+
+    const triggerPicker = () => {
+        if (!canUpload()) return;
+        if (!uploadFileInput) return;
+        uploadFileInput.value = '';
+        uploadFileInput.click();
+    };
+
+    card.addEventListener('click', triggerPicker);
+    card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            triggerPicker();
+        }
     });
 
     return card;
