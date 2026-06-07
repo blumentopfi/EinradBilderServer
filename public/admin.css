@@ -1318,11 +1318,11 @@
 }
 
 .manage-table tbody tr:hover {
-    background: rgba(208, 74, 24, 0.05);
+    background: rgba(28, 159, 199, 0.05);
 }
 
 .manage-table tbody tr.row-selected {
-    background: rgba(208, 74, 24, 0.08);
+    background: rgba(28, 159, 199, 0.08);
 }
 
 .manage-table td {
