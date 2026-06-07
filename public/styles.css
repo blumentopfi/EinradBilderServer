@@ -11,6 +11,9 @@ html[data-theme="dark"] {
 }
 
 :root {
+    /* Logo filter — flip dark PNGs to light in dark mode */
+    --logo-filter: none;
+
     /* Brand — SVHU cyan, used sparingly */
     --color-primary: #1c9fc7;
     --color-primary-hover: #1681a3;
@@ -94,6 +97,7 @@ html[data-theme="dark"] {
     --color-primary-soft-hover: rgba(46, 180, 214, 0.26);
     --color-primary-text-on-soft: #7ad2e8;
     --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.5);
+    --logo-filter: invert(1);
 }
 
 * {
@@ -254,6 +258,7 @@ a:focus-visible,
     display: block;
     margin: 0 auto 32px;
     opacity: 0.92;
+    filter: var(--logo-filter);
 }
 
 #login-form {
@@ -390,6 +395,7 @@ header h1 {
     height: 32px;
     object-fit: contain;
     opacity: 0.85;
+    filter: var(--logo-filter);
 }
 
 .header-controls {
@@ -624,6 +630,7 @@ header h1 {
     background: url('onewheel-header-logo.png') center/contain no-repeat;
     animation: bounce 1s infinite;
     flex-shrink: 0;
+    filter: var(--logo-filter);
 }
 
 @keyframes bounce {
@@ -1568,6 +1575,7 @@ header h1 {
     margin: 0 auto 16px;
     background: url('onewheel-header-logo.png') center/contain no-repeat;
     opacity: 0.4;
+    filter: var(--logo-filter);
 }
 
 /* Folder Cards — same uniform aspect grid as image cards, with a folder icon. */
@@ -2499,6 +2507,7 @@ body.rubber-banding .folder-card {
         --color-primary-soft: rgba(46, 180, 214, 0.16);
         --color-primary-soft-hover: rgba(46, 180, 214, 0.26);
         --color-primary-text-on-soft: #7ad2e8;
+        --logo-filter: invert(1);
         --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.5);
         color-scheme: dark;
     }
