@@ -4,17 +4,24 @@
 // - Never caches /api/*, /share/*, or /api/share/* (auth + tokens — caching would leak data
 //   across sessions and keep expired share pages alive).
 
-const CACHE_VERSION = 'v1-2026-04-16';
+const CACHE_VERSION = 'v1-2026-06-07-cyan-png2';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
   '/',
   '/index.html',
+  '/medien.html',
+  '/faq.html',
   '/styles.css',
+  '/admin.css',
+  '/faq.css',
   '/app.js',
+  '/admin.js',
+  '/faq.js',
   '/dark-mode.js',
-  '/unicycle.png',
+  '/onewheel-logo.png',
+  '/onewheel-header-logo.png',
   '/manifest.webmanifest'
 ];
 

@@ -15,11 +15,12 @@
         <header class="admin-header">
             <div class="header-top">
                 <div class="header-title">
-                    <img src="unicycle.png" class="header-logo" alt="" aria-hidden="true" width="50" height="50">
+                    <img src="onewheel-header-logo.png" class="header-logo" alt="" aria-hidden="true" width="50" height="50">
                     <h1>Admin-Bereich</h1>
                 </div>
                 <nav class="header-controls" aria-label="Hauptnavigation">
                     <button id="back-to-gallery-btn" class="btn-nav">Galerie</button>
+                    <button id="medien-nav-btn" class="btn-nav hidden">Medien</button>
                     <button id="admin-nav-btn" class="btn-nav active" aria-current="page">Admin</button>
                     <button id="admin-faq-btn" class="btn-nav">FAQ</button>
                     <button id="dark-mode-toggle" class="btn-dark-mode" aria-label="Dunkelmodus umschalten" title="Dunkelmodus umschalten">
@@ -52,14 +53,6 @@
             <button class="tab-btn" data-tab="users">
                 <span class="tab-icon" aria-hidden="true">👥</span>
                 Benutzerverwaltung
-            </button>
-            <button class="tab-btn" data-tab="upload">
-                <span class="tab-icon" aria-hidden="true">📤</span>
-                Medien hochladen
-            </button>
-            <button class="tab-btn" data-tab="manage">
-                <span class="tab-icon" aria-hidden="true">🗂️</span>
-                Medien verwalten
             </button>
             <button class="tab-btn" data-tab="audit">
                 <span class="tab-icon" aria-hidden="true">📋</span>
@@ -228,94 +221,6 @@
                             </tr>
                         </thead>
                         <tbody id="users-tbody">
-                            <!-- Populated by JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Upload Tab -->
-            <div id="upload-tab" class="tab-content">
-                <div class="tab-header">
-                    <h2>Medien hochladen</h2>
-                </div>
-
-                <!-- Folder Navigator -->
-                <div class="upload-section">
-                    <h3>Zielordner auswählen</h3>
-                    <div id="upload-breadcrumb" class="breadcrumb" aria-label="Aktueller Upload-Pfad"></div>
-                    <div id="upload-folders" class="folder-grid"></div>
-                    <button id="create-folder-btn" class="btn-secondary"><span aria-hidden="true">📁</span> Neuer Ordner</button>
-                </div>
-
-                <!-- Upload Area -->
-                <div class="upload-section">
-                    <h3>Dateien hochladen</h3>
-                    <div class="upload-destination">
-                        <strong>Upload-Ziel:</strong> <span id="upload-destination-path">/media</span>
-                    </div>
-                    <div id="drop-zone" class="drop-zone" aria-label="Dateien zum Hochladen auswählen oder hierher ziehen">
-                        <div class="drop-zone-content">
-                            <div class="upload-icon" aria-hidden="true">📤</div>
-                            <p class="drop-zone-text">
-                                Dateien hierher ziehen oder klicken zum Auswählen
-                            </p>
-                            <p class="drop-zone-hint">
-                                Unterstützt: JPG, PNG, GIF, WebP, BMP, MP4, WebM, MOV, AVI, MKV
-                            </p>
-                            <input type="file" id="file-input" name="files" multiple accept="image/*,video/*" hidden>
-                        </div>
-                    </div>
-
-                    <!-- Upload Queue -->
-                    <div id="upload-queue" class="upload-queue hidden">
-                        <div class="upload-queue-header">
-                            <h4>Upload-Warteschlange</h4>
-                            <button id="cancel-all-btn" class="btn-secondary">Alle abbrechen</button>
-                        </div>
-                        <div id="upload-items"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Manage Media Tab -->
-            <div id="manage-tab" class="tab-content">
-                <div class="tab-header">
-                    <h2>Medien verwalten</h2>
-                    <button id="reload-manage-btn" class="btn-secondary" title="Aktualisieren" aria-label="Ansicht aktualisieren">
-                        <span aria-hidden="true">🔄</span> Aktualisieren
-                    </button>
-                </div>
-
-                <div id="manage-loading" class="loading hidden" role="status" aria-live="polite">Lade Inhalte…</div>
-                <div id="manage-error" class="error-message" role="alert" aria-live="polite"></div>
-
-                <div id="manage-breadcrumb" class="breadcrumb" aria-label="Aktueller Pfad"></div>
-
-                <!-- Bulk action bar for manage -->
-                <div id="manage-bulk-bar" class="bulk-action-bar hidden">
-                    <span class="bulk-counter"><strong id="manage-selected-count">0</strong> ausgewählt</span>
-                    <div class="bulk-action-buttons">
-                        <button id="manage-move-btn" class="action-btn">Verschieben</button>
-                        <button id="manage-delete-btn" class="action-btn danger">Löschen</button>
-                        <button id="manage-clear-btn" class="action-btn subtle">Auswahl aufheben</button>
-                    </div>
-                </div>
-
-                <div class="manage-table-container">
-                    <table class="manage-table">
-                        <thead>
-                            <tr>
-                                <th class="col-checkbox">
-                                    <input type="checkbox" id="manage-select-all" aria-label="Alle auswählen">
-                                </th>
-                                <th class="col-icon" aria-label="Typ"></th>
-                                <th>Name</th>
-                                <th class="col-type">Typ</th>
-                                <th class="col-actions">Aktionen</th>
-                            </tr>
-                        </thead>
-                        <tbody id="manage-tbody">
                             <!-- Populated by JavaScript -->
                         </tbody>
                     </table>

@@ -14,10 +14,9 @@
     <a href="#main-content" class="skip-link">Zum Hauptinhalt springen</a>
     <!-- Login Screen -->
     <div id="login-screen" class="screen">
-        <img src="unicycle.png" class="unicycle-bg" alt="" aria-hidden="true" width="300" height="300">
+        <img src="onewheel-logo.png" class="unicycle-bg" alt="" aria-hidden="true" width="300" height="300">
         <div class="login-container">
-            <img src="unicycle.png" class="unicycle-logo" alt="" aria-hidden="true" width="80" height="80">
-            <h1>Bildergalerie</h1>
+            <img src="onewheel-logo.png" class="unicycle-logo" alt="" aria-hidden="true" width="360" height="360">
             <form id="login-form">
                 <input type="text" id="username-input" name="username" placeholder="Benutzername" required autocomplete="username" spellcheck="false" autocapitalize="none" autocorrect="off">
                 <div class="password-input-wrapper">
@@ -37,7 +36,7 @@
         <header>
             <div class="header-top">
                 <div class="header-title">
-                    <img src="unicycle.png" class="header-logo" alt="" aria-hidden="true" width="40" height="40">
+                    <img src="onewheel-header-logo.png" class="header-logo" alt="" aria-hidden="true" width="40" height="40">
                     <h1>Bildergalerie</h1>
                 </div>
                 <nav class="header-controls" aria-label="Hauptnavigation">
@@ -47,6 +46,7 @@
                         <span class="global-search-kbd" aria-hidden="true"><kbd>/</kbd></span>
                     </button>
                     <button id="gallery-nav-btn" class="btn-nav active" aria-current="page">Galerie</button>
+                    <button id="medien-nav-btn" class="btn-nav hidden">Medien</button>
                     <button id="admin-btn" class="btn-nav hidden">Admin</button>
                     <button id="faq-btn" class="btn-nav">FAQ</button>
                     <button id="dark-mode-toggle" class="btn-dark-mode" aria-label="Dunkelmodus umschalten" title="Dunkelmodus umschalten">
@@ -85,13 +85,11 @@
             </div>
             <div class="gallery-filterbar" role="search" aria-label="Galerie filtern">
                 <div class="search-wrapper">
-                    <span class="search-icon" aria-hidden="true">🔍</span>
                     <input type="search" id="search-input" class="search-input" placeholder="Suchen…" aria-label="Dateien suchen" autocomplete="off">
                     <button type="button" id="search-clear" class="search-clear hidden" aria-label="Suche leeren">×</button>
                 </div>
                 <div class="type-filter" role="group" aria-label="Nach Typ filtern">
                     <button type="button" class="type-filter-btn active" data-filter="all" aria-pressed="true">Alle</button>
-                    <button type="button" class="type-filter-btn" data-filter="folders" aria-pressed="false">Ordner</button>
                     <button type="button" class="type-filter-btn" data-filter="images" aria-pressed="false">Bilder</button>
                     <button type="button" class="type-filter-btn" data-filter="videos" aria-pressed="false">Videos</button>
                     <button type="button" class="type-filter-btn favorites-filter-btn" data-filter="favorites" aria-pressed="false" aria-label="Nur Favoriten anzeigen"><span class="star-icon" aria-hidden="true">★</span> Favoriten</button>

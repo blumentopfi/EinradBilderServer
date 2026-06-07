@@ -29,6 +29,8 @@ const adminUserMenuBtn = document.getElementById('admin-user-menu-btn');
 const adminUserDropdown = document.getElementById('admin-user-dropdown');
 const backToGalleryBtn = document.getElementById('back-to-gallery-btn');
 const adminFaqBtn = document.getElementById('admin-faq-btn');
+const medienNavBtn = document.getElementById('medien-nav-btn');
+const adminNavBtn = document.getElementById('admin-nav-btn');
 const adminChangePasswordBtn = document.getElementById('admin-change-password-btn');
 const adminLogoutBtn = document.getElementById('admin-logout-btn');
 const tabButtons = document.querySelectorAll('.tab-btn');
@@ -82,6 +84,19 @@ async function checkAuth() {
         currentUser = data.user;
         adminUserInfo.textContent = `Angemeldet als: ${currentUser.displayName}`;
 
+        // Reveal cross-page nav buttons by role.
+        // Medien button: admin + uploader. Admin button: admin only (when not already on admin page).
+        if (currentUser.role === 'admin' || currentUser.role === 'uploader') {
+            if (medienNavBtn && !medienNavBtn.classList.contains('active')) {
+                medienNavBtn.classList.remove('hidden');
+            }
+        }
+        if (currentUser.role === 'admin') {
+            if (adminNavBtn && !adminNavBtn.classList.contains('active')) {
+                adminNavBtn.classList.remove('hidden');
+            }
+        }
+
         // Hide admin-only tabs for uploaders
         if (currentUser.role === 'uploader') {
             const adminOnlyTabs = ['dashboard', 'users', 'audit'];
@@ -90,16 +105,22 @@ async function checkAuth() {
                 if (tab) tab.style.display = 'none';
             });
 
-            // Switch to upload tab by default for uploaders
-            switchTab('upload');
+            // Switch to media tab by default for uploaders
+            switchTab('manage');
         } else {
-            // Admin: default tab is Dashboard
-            switchTab('dashboard');
-            loadDashboard();
-            loadUsers();
+            // Admin: default tab is Dashboard (if present on this page)
+            if (document.getElementById('dashboard-tab')) {
+                switchTab('dashboard');
+                loadDashboard();
+                loadUsers();
+            }
         }
 
-        loadUploadFolders();
+        if (document.getElementById('drop-zone')) loadUploadFolders();
+        if (document.getElementById('manage-tbody') && !manageInitialized) {
+            manageInitialized = true;
+            loadManagePath('');
+        }
     } catch (error) {
         console.error('Auth check error:', error);
         window.location.href = '/';
@@ -149,6 +170,18 @@ function switchTab(tabName) {
 backToGalleryBtn.addEventListener('click', () => {
     window.location.href = '/';
 });
+
+// Cross-page nav: wire clicks only on buttons that aren't already active here
+if (medienNavBtn && !medienNavBtn.classList.contains('active')) {
+    medienNavBtn.addEventListener('click', () => {
+        window.location.href = '/medien.html';
+    });
+}
+if (adminNavBtn && !adminNavBtn.classList.contains('active')) {
+    adminNavBtn.addEventListener('click', () => {
+        window.location.href = '/admin.html';
+    });
+}
 
 adminFaqBtn.addEventListener('click', () => {
     window.location.href = '/faq.html';
@@ -278,7 +311,7 @@ function renderUsers() {
     updateBulkUI();
 }
 
-createUserBtn.addEventListener('click', () => {
+if (createUserBtn) createUserBtn.addEventListener('click', () => {
     editingUserId = null;
     document.getElementById('user-modal-title').textContent = 'Neuer Benutzer';
     document.getElementById('password-group').style.display = 'block';
@@ -309,7 +342,7 @@ function editUser(userId) {
     openModal(userModal);
 }
 
-userForm.addEventListener('submit', async (e) => {
+if (userForm) userForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const username = document.getElementById('user-username').value.trim();
@@ -361,7 +394,7 @@ function resetPassword(userId) {
     openModal(passwordModal);
 }
 
-passwordForm.addEventListener('submit', async (e) => {
+if (passwordForm) passwordForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const userId = document.getElementById('password-user-id').value;
@@ -529,13 +562,13 @@ function renderUploadFolders(folders, files = []) {
     });
 }
 
-createFolderBtn.addEventListener('click', () => {
+if (createFolderBtn) createFolderBtn.addEventListener('click', () => {
     document.getElementById('folder-name').value = '';
     document.getElementById('folder-current-path').textContent = `/media${currentUploadPath ? '/' + currentUploadPath : ''}`;
     openModal(folderModal);
 });
 
-folderForm.addEventListener('submit', async (e) => {
+if (folderForm) folderForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const folderName = document.getElementById('folder-name').value.trim();
@@ -566,26 +599,28 @@ folderForm.addEventListener('submit', async (e) => {
 });
 
 // Drag and drop
-dropZone.addEventListener('click', () => fileInput.click());
+if (dropZone) {
+    dropZone.addEventListener('click', () => fileInput.click());
 
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('drag-over');
-});
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
 
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('drag-over');
-});
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+    });
 
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('drag-over');
-    handleFiles(e.dataTransfer.files);
-});
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        handleFiles(e.dataTransfer.files);
+    });
 
-fileInput.addEventListener('change', (e) => {
-    handleFiles(e.target.files);
-});
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+}
 
 function handleFiles(files) {
     const validFiles = Array.from(files).filter(file => {
@@ -717,7 +752,7 @@ function cancelUpload(uploadId) {
     }
 }
 
-cancelAllBtn.addEventListener('click', () => {
+if (cancelAllBtn) cancelAllBtn.addEventListener('click', () => {
     uploadItems.innerHTML = '';
     uploadQueueEl.classList.add('hidden');
 });

@@ -13,8 +13,8 @@ html[data-theme="dark"] {
 }
 
 :root {
-    --color-primary: #d04a18;
-    --color-primary-hover: #a83b13;
+    --color-primary: #1c9fc7;
+    --color-primary-hover: #1681a3;
     --color-bg: #fbfaf7;
     --color-surface: #ffffff;
     --color-surface-alt: #f4f2ec;
@@ -48,8 +48,8 @@ html[data-theme="dark"] {
     --color-text-faint: #6b6b66;
     --color-border: #2a2a2e;
     --color-error: #ff7a70;
-    --color-primary: #e35c2a;
-    --color-primary-hover: #ff7a4a;
+    --color-primary: #2eb4d6;
+    --color-primary-hover: #5cc4e0;
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.5);
     --shadow-lg: 0 6px 20px rgba(0, 0, 0, 0.7);

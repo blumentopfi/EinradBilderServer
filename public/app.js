@@ -104,7 +104,7 @@ let favorites = new Set();
 
 // Filter/search state
 let searchQuery = '';
-let typeFilter = 'all'; // 'all' | 'folders' | 'images' | 'videos' | 'favorites'
+let typeFilter = 'all'; // 'all' | 'images' | 'videos' | 'favorites'
 
 // Slideshow state
 let slideshowTimer = null;
@@ -127,6 +127,7 @@ const userInfo = document.getElementById('user-info');
 const userMenuBtn = document.getElementById('user-menu-btn');
 const userDropdown = document.getElementById('user-dropdown');
 const adminBtn = document.getElementById('admin-btn');
+const medienNavBtn = document.getElementById('medien-nav-btn');
 const faqBtn = document.getElementById('faq-btn');
 const gallery = document.getElementById('gallery');
 const loading = document.getElementById('loading');
@@ -242,8 +243,10 @@ function showGallery() {
         // Show admin button if user is admin or uploader
         if (currentUser.role === 'admin' || currentUser.role === 'uploader') {
             adminBtn.classList.remove('hidden');
+            if (medienNavBtn) medienNavBtn.classList.remove('hidden');
         } else {
             adminBtn.classList.add('hidden');
+            if (medienNavBtn) medienNavBtn.classList.add('hidden');
         }
 
         // Show upload button if user is admin or uploader
@@ -305,6 +308,10 @@ loginForm.addEventListener('submit', async (e) => {
 // Admin button handling
 adminBtn.addEventListener('click', () => {
     window.location.href = '/admin.html';
+});
+
+if (medienNavBtn) medienNavBtn.addEventListener('click', () => {
+    window.location.href = '/medien.html';
 });
 
 // FAQ button handling
@@ -463,7 +470,6 @@ function maybeOpenPendingPreview() {
 // Apply current search + type filter to an item
 function matchesFilters(item, kind) {
     // kind: 'folder' | 'image' | 'video'
-    if (typeFilter === 'folders' && kind !== 'folder') return false;
     if (typeFilter === 'images' && kind !== 'image') return false;
     if (typeFilter === 'videos' && kind !== 'video') return false;
     if (typeFilter === 'favorites') {
@@ -897,7 +903,7 @@ function createMediaCard(fileObj, index) {
         mediaElement.muted = true;
         mediaElement.loop = true;
         mediaElement.playsInline = true;
-        mediaElement.preload = 'none';
+        mediaElement.preload = 'metadata';
         mediaElement.setAttribute('aria-label', fileObj.name);
 
         // Add play icon overlay

@@ -4,6 +4,7 @@ const faqUserMenuBtn = document.getElementById('faq-user-menu-btn');
 const faqUserDropdown = document.getElementById('faq-user-dropdown');
 const backToGalleryBtn = document.getElementById('back-to-gallery-btn');
 const adminNavBtn = document.getElementById('admin-nav-btn');
+const medienNavBtn = document.getElementById('medien-nav-btn');
 const faqChangePasswordBtn = document.getElementById('faq-change-password-btn');
 const faqLogoutBtn = document.getElementById('faq-logout-btn');
 const createFaqBtn = document.getElementById('create-faq-btn');
@@ -53,9 +54,10 @@ async function checkAuth() {
             createFaqBtn.classList.remove('hidden');
         }
 
-        // Show admin button for admins and uploaders
+        // Show admin + Medien buttons for admins and uploaders
         if (currentUser.role === 'admin' || currentUser.role === 'uploader') {
             adminNavBtn.classList.remove('hidden');
+            if (medienNavBtn) medienNavBtn.classList.remove('hidden');
         }
 
         loadFaqItems();
@@ -81,6 +83,10 @@ backToGalleryBtn.addEventListener('click', () => {
 
 adminNavBtn.addEventListener('click', () => {
     window.location.href = '/admin.html';
+});
+
+if (medienNavBtn) medienNavBtn.addEventListener('click', () => {
+    window.location.href = '/medien.html';
 });
 
 // User menu dropdown handling

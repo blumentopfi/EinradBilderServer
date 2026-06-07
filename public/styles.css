@@ -11,13 +11,13 @@ html[data-theme="dark"] {
 }
 
 :root {
-    /* Brand — terracotta, used sparingly */
-    --color-primary: #d04a18;
-    --color-primary-hover: #a83b13;
-    --color-primary-soft: rgba(208, 74, 24, 0.1);
-    --color-primary-soft-hover: rgba(208, 74, 24, 0.18);
-    --color-primary-text-on-soft: #a83b13;
-    --color-secondary: #a83b13;
+    /* Brand — SVHU cyan, used sparingly */
+    --color-primary: #1c9fc7;
+    --color-primary-hover: #1681a3;
+    --color-primary-soft: rgba(28, 159, 199, 0.1);
+    --color-primary-soft-hover: rgba(28, 159, 199, 0.18);
+    --color-primary-text-on-soft: #1681a3;
+    --color-secondary: #1681a3;
 
     /* Paper & ink */
     --color-bg: #fbfaf7;
@@ -38,10 +38,10 @@ html[data-theme="dark"] {
     --color-warning: #b06a1a;
 
     /* Favorite button */
-    --color-favorite: #d04a18;
+    --color-favorite: #1c9fc7;
     --color-favorite-idle: #ffffff;
     --favorite-btn-bg: rgba(0, 0, 0, 0.45);
-    --favorite-btn-bg-active: #d04a18;
+    --favorite-btn-bg-active: #1c9fc7;
     --favorite-btn-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
 
     /* Typography */
@@ -88,11 +88,11 @@ html[data-theme="dark"] {
     --color-border: #2a2a2e;
     --color-border-soft: #252528;
     --color-border-faint: #1f1f22;
-    --color-primary: #e35c2a;
-    --color-primary-hover: #ff7a4a;
-    --color-primary-soft: rgba(227, 92, 42, 0.16);
-    --color-primary-soft-hover: rgba(227, 92, 42, 0.26);
-    --color-primary-text-on-soft: #ff8f60;
+    --color-primary: #2eb4d6;
+    --color-primary-hover: #5cc4e0;
+    --color-primary-soft: rgba(46, 180, 214, 0.16);
+    --color-primary-soft-hover: rgba(46, 180, 214, 0.26);
+    --color-primary-text-on-soft: #7ad2e8;
     --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
@@ -248,10 +248,11 @@ a:focus-visible,
 }
 
 .unicycle-logo {
-    width: 64px;
-    height: 64px;
+    width: 360px;
+    height: 360px;
+    object-fit: contain;
     display: block;
-    margin: 0 auto 20px;
+    margin: 0 auto 32px;
     opacity: 0.92;
 }
 
@@ -387,6 +388,7 @@ header h1 {
 .header-logo {
     width: 32px;
     height: 32px;
+    object-fit: contain;
     opacity: 0.85;
 }
 
@@ -604,7 +606,10 @@ header h1 {
 }
 
 .loading {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
     padding: 40px;
     color: var(--color-text-soft);
     font-size: 15px;
@@ -614,13 +619,11 @@ header h1 {
 
 .loading::after {
     content: '';
-    display: inline-block;
-    width: 30px;
-    height: 30px;
-    margin-left: 10px;
-    background: url('unicycle.png') center/contain no-repeat;
+    width: 90px;
+    height: 90px;
+    background: url('onewheel-header-logo.png') center/contain no-repeat;
     animation: bounce 1s infinite;
-    vertical-align: middle;
+    flex-shrink: 0;
 }
 
 @keyframes bounce {
@@ -809,7 +812,12 @@ header h1 {
     font-size: 18px;
     z-index: 5;
     pointer-events: none;
-    transition: background var(--transition-fast);
+    opacity: 0;
+    transition: background var(--transition-fast), opacity var(--transition-normal);
+}
+
+.image-wrapper:has(video.loaded) .play-icon {
+    opacity: 1;
 }
 
 .image-card:hover .play-icon {
@@ -1558,7 +1566,7 @@ header h1 {
     width: 56px;
     height: 56px;
     margin: 0 auto 16px;
-    background: url('unicycle.png') center/contain no-repeat;
+    background: url('onewheel-header-logo.png') center/contain no-repeat;
     opacity: 0.4;
 }
 
@@ -1819,23 +1827,15 @@ header h1 {
     align-items: center;
 }
 
-.search-icon {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-    font-size: 14px;
-    opacity: 0.6;
-}
-
 .search-input {
     width: 100%;
-    padding: 10px 38px 10px 38px;
+    padding: 10px 38px 10px 14px;
     border: 2px solid var(--color-border);
     border-radius: var(--radius-md);
     font-size: 14px;
     background: var(--color-bg);
+    color: var(--color-text);
+    caret-color: var(--color-text);
     transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
     box-sizing: border-box;
 }
@@ -1845,6 +1845,12 @@ header h1 {
     border-color: var(--color-primary);
     box-shadow: 0 0 0 3px rgba(208, 74, 24, 0.15);
     background: var(--color-surface);
+}
+
+.search-input::-webkit-search-cancel-button,
+.search-input::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .search-clear {
@@ -2312,13 +2318,17 @@ body.rubber-banding .folder-card {
 
 .toggle-password-btn {
     position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
+    right: 6px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
     background: none;
     border: none;
     cursor: pointer;
-    padding: 6px 8px;
+    padding: 0;
     font-size: 18px;
     color: var(--color-text-muted);
     transition: color var(--transition-fast);
@@ -2484,11 +2494,11 @@ body.rubber-banding .folder-card {
         --color-border: #2a2a2e;
         --color-border-soft: #252528;
         --color-border-faint: #1f1f22;
-        --color-primary: #e35c2a;
-        --color-primary-hover: #ff7a4a;
-        --color-primary-soft: rgba(227, 92, 42, 0.16);
-        --color-primary-soft-hover: rgba(227, 92, 42, 0.26);
-        --color-primary-text-on-soft: #ff8f60;
+        --color-primary: #2eb4d6;
+        --color-primary-hover: #5cc4e0;
+        --color-primary-soft: rgba(46, 180, 214, 0.16);
+        --color-primary-soft-hover: rgba(46, 180, 214, 0.26);
+        --color-primary-text-on-soft: #7ad2e8;
         --shadow-card-hover: 0 2px 8px rgba(0, 0, 0, 0.5);
         color-scheme: dark;
     }
