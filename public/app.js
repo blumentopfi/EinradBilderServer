@@ -1172,80 +1172,137 @@ downloadBtn.addEventListener('click', async () => {
 // Preview modal
 let previewHintsTimeout = null;
 
-function openPreview(index) {
-    currentPreviewIndex = index;
-    updatePreview(false);
-    previewModal.classList.remove('hidden');
-    previewModal.classList.remove('closing');
+// ----- View-Transition helpers (gallery thumb ↔ preview morph + slideshow crossfade) -----
+// `prefersReducedMotion` is a module-level const declared near the top of this file.
 
-    // Show keyboard hints, then fade them out
-    if (previewHints) {
+const supportsViewTransitions = () =>
+    typeof document.startViewTransition === 'function' && !prefersReducedMotion;
+
+function preloadMedia(src) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.onload = resolve;
+        img.onerror = resolve;
+        img.src = src;
+        if (img.complete) resolve();
+    });
+}
+
+function isInViewport(el) {
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    return r.bottom > 0 && r.right > 0 &&
+           r.top < window.innerHeight && r.left < window.innerWidth;
+}
+
+function findCardForIndex(index) {
+    return document.querySelector(`.image-card[data-index="${index}"]`);
+}
+
+function findCardMedia(card) {
+    return card?.querySelector('.image-wrapper img, .image-wrapper video');
+}
+
+function openPreview(index) {
+    const sourceCard = findCardForIndex(index);
+    const sourceMedia = findCardMedia(sourceCard);
+
+    const apply = () => {
+        currentPreviewIndex = index;
+        updatePreview(false);
+        previewModal.classList.remove('hidden');
+        previewModal.classList.remove('closing');
+        // Hand the view-transition-name off to the preview element so we
+        // don't end up with two elements claiming the same name.
+        if (sourceMedia) sourceMedia.style.viewTransitionName = '';
+    };
+
+    const runHintsAnimation = () => {
+        if (!previewHints) return;
         previewHints.style.animation = 'none';
-        // Trigger reflow to restart animation
         void previewHints.offsetWidth;
         previewHints.style.animation = 'hintsAppear 3s 0.5s ease forwards';
+    };
+
+    if (sourceMedia && supportsViewTransitions() && isInViewport(sourceMedia)) {
+        sourceMedia.style.viewTransitionName = 'preview-anchor';
+        document.startViewTransition(apply).finished.finally(runHintsAnimation);
+    } else {
+        apply();
+        runHintsAnimation();
     }
 }
 
 function closePreview() {
-    // Pause video if playing
     if (!previewVideo.classList.contains('hidden')) {
         previewVideo.pause();
     }
     pauseSlideshow();
-    previewModal.classList.add('hidden');
-    currentPreviewIndex = -1;
+
+    const targetCard = findCardForIndex(currentPreviewIndex);
+    const targetMedia = findCardMedia(targetCard);
+
+    const apply = () => {
+        previewModal.classList.add('hidden');
+        currentPreviewIndex = -1;
+        // After hide: hand the anchor back to the thumbnail so the morph
+        // captures it as the new state.
+        if (targetMedia) targetMedia.style.viewTransitionName = 'preview-anchor';
+    };
+
+    if (targetMedia && supportsViewTransitions() && isInViewport(targetMedia)) {
+        document.startViewTransition(apply).finished.finally(() => {
+            targetMedia.style.viewTransitionName = '';
+        });
+    } else {
+        apply();
+        // No transition, but clean up the inline style if we set one earlier.
+        if (targetMedia) targetMedia.style.viewTransitionName = '';
+    }
 }
 
 function updatePreview(crossfade) {
     if (currentPreviewIndex < 0 || currentPreviewIndex >= images.length) return;
 
     const fileObj = images[currentPreviewIndex];
+    const mediaPath = `/api/media/${encodeURIComponent(fileObj.path)}`;
 
-    if (fileObj.type === 'video') {
-        // Show video, hide image
-        previewImage.classList.add('hidden');
-        previewImage.src = '';
-        previewVideo.classList.remove('hidden');
-        if (crossfade) {
-            previewVideo.classList.remove('crossfade');
-            void previewVideo.offsetWidth;
-            previewVideo.classList.add('crossfade');
+    const applyChange = () => {
+        if (fileObj.type === 'video') {
+            previewImage.classList.add('hidden');
+            previewImage.src = '';
+            previewVideo.classList.remove('hidden');
+            previewVideo.src = mediaPath;
+            previewVideo.load();
+            // Slideshow should not auto-advance through videos.
+            if (slideshowPlaying) pauseSlideshow();
+        } else {
+            previewVideo.classList.add('hidden');
+            previewVideo.pause();
+            previewVideo.src = '';
+            previewImage.classList.remove('hidden');
+            previewImage.src = mediaPath;
+            previewImage.alt = fileObj.name;
         }
-        previewVideo.src = `/api/media/${encodeURIComponent(fileObj.path)}`;
-        previewVideo.load();
-        // Slideshow should not auto-advance through videos — pause it so the
-        // user can choose to watch or manually skip.
-        if (slideshowPlaying) {
-            pauseSlideshow();
-        }
-    } else {
-        // Show image, hide video
-        previewVideo.classList.add('hidden');
-        previewVideo.pause();
-        previewVideo.src = '';
-        previewImage.classList.remove('hidden');
-        if (crossfade) {
-            previewImage.classList.remove('crossfade');
-            void previewImage.offsetWidth;
-            previewImage.classList.add('crossfade');
-        }
-        previewImage.src = `/api/media/${encodeURIComponent(fileObj.path)}`;
-        previewImage.alt = fileObj.name;
-    }
-
-    // Update counter
-    previewCounter.textContent = `${currentPreviewIndex + 1} / ${images.length}`;
-
-    // Update filename
-    previewFilename.textContent = fileObj.name;
-
-    prevBtn.disabled = currentPreviewIndex === 0;
-    nextBtn.disabled = currentPreviewIndex === images.length - 1;
-
-    // Update counter
-    if (previewCounter) {
         previewCounter.textContent = `${currentPreviewIndex + 1} / ${images.length}`;
+        previewFilename.textContent = fileObj.name;
+        prevBtn.disabled = currentPreviewIndex === 0;
+        nextBtn.disabled = currentPreviewIndex === images.length - 1;
+    };
+
+    const useTransition = crossfade && supportsViewTransitions();
+
+    if (useTransition && fileObj.type !== 'video') {
+        // Preload so the post-transition snapshot has actual image content.
+        preloadMedia(mediaPath).then(() => {
+            document.startViewTransition(applyChange);
+        });
+    } else if (useTransition) {
+        // Videos: skip preload (would need a separate strategy); still wrap
+        // for a clean crossfade between video poster frames.
+        document.startViewTransition(applyChange);
+    } else {
+        applyChange();
     }
 }
 

@@ -1258,6 +1258,26 @@ header h1 {
     border-radius: 0;
     box-shadow: none;
     border: none;
+    /* View-Transitions anchor: when a gallery thumb is morphed into the
+       preview (and back on close), both share this name so the browser
+       captures and animates the geometry change. */
+    view-transition-name: preview-anchor;
+}
+
+/* Slow the morph slightly so the eye can follow it. */
+::view-transition-group(preview-anchor) {
+    animation-duration: 380ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+::view-transition-image-pair(preview-anchor) {
+    animation-duration: 380ms;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Page-level crossfade (rest of the chrome fading while modal shows/hides). */
+::view-transition-group(root) {
+    animation-duration: 220ms;
 }
 
 #preview-video {

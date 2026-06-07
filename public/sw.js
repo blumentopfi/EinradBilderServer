@@ -4,7 +4,7 @@
 // - Never caches /api/*, /share/*, or /api/share/* (auth + tokens — caching would leak data
 //   across sessions and keep expired share pages alive).
 
-const CACHE_VERSION = 'v1-2026-06-07-polish';
+const CACHE_VERSION = 'v1-2026-06-07-vt';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `runtime-${CACHE_VERSION}`;
 
