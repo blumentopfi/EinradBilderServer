@@ -56,6 +56,7 @@ const IMAGES_DIR = path.resolve(process.env.IMAGES_DIR || './media');
 const SESSION_SECRET = process.env.SESSION_SECRET;
 const USE_SECURE_COOKIES = process.env.USE_SECURE_COOKIES === 'true';
 const SESSION_MAX_AGE = parseInt(process.env.SESSION_MAX_AGE || '86400000');
+const MAX_UPLOAD_SIZE_MB = parseInt(process.env.MAX_UPLOAD_SIZE_MB || '10240');
 
 // Security check: ensure required environment variables are set
 if (!SESSION_SECRET) {
@@ -598,12 +599,26 @@ const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
   limits: {
-    fileSize: 100 * 1024 * 1024 // 100MB limit
+    fileSize: MAX_UPLOAD_SIZE_MB * 1024 * 1024
   }
 });
 
+// Multer errors (size limit, rejected file type) fire inside the middleware,
+// before the route handler's try/catch — without this wrapper they would
+// fall through to Express's default handler as a 500.
+function handleUpload(req, res, next) {
+  upload.single('file')(req, res, (err) => {
+    if (!err) return next();
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: `Datei zu groß (max. ${MAX_UPLOAD_SIZE_MB} MB)` });
+    }
+    console.error('Upload error:', err);
+    res.status(400).json({ error: err.message || 'Upload fehlgeschlagen' });
+  });
+}
+
 // Upload file endpoint
-app.post('/api/admin/upload', requireUploader, upload.single('file'), async (req, res) => {
+app.post('/api/admin/upload', requireUploader, handleUpload, async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'Keine Datei hochgeladen' });
